@@ -27,6 +27,14 @@
   margin-bottom: 0.5rem;
 }
 
+.selection-subtitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #00ff88;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
 .creation-subtitle {
   font-size: 1.1rem;
   color: #b0b0b0;
@@ -205,6 +213,25 @@
   border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.league-available {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(0, 255, 136, 0.2);
+  color: #00ff88;
+  border: 1px solid #00ff88;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.league-card.full {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Team Form */

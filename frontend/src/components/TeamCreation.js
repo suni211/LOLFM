@@ -165,28 +165,39 @@ function TeamCreation({ user, onTeamCreated }) {
             >
               ← 지역 다시 선택
             </button>
+            <h3 className="selection-subtitle">{selectedRegion.full_name} - 리그 선택</h3>
             <div className="league-grid">
-              {leagues.map(league => (
-                <div
-                  key={league.id}
-                  className="league-card"
-                  onClick={() => handleLeagueSelect(league)}
-                >
-                  <div className="league-badge">
-                    <span className="league-division">{league.division}부</span>
+              {leagues.length === 0 ? (
+                <div className="loading-message">리그 정보를 불러오는 중...</div>
+              ) : (
+                leagues.map(league => (
+                  <div
+                    key={league.id}
+                    className={`league-card ${league.current_teams >= league.max_teams ? 'full' : ''}`}
+                    onClick={() => {
+                      if (league.current_teams < league.max_teams) {
+                        handleLeagueSelect(league);
+                      }
+                    }}
+                  >
+                    <div className="league-badge">
+                      <span className="league-division">{league.division}부</span>
+                    </div>
+                    <h3 className="league-name">{league.name}</h3>
+                    <div className="league-info">
+                      <span className="league-teams">
+                        <span className="info-icon">👥</span>
+                        {league.current_teams || 0} / {league.max_teams} 팀
+                      </span>
+                    </div>
+                    {league.current_teams >= league.max_teams ? (
+                      <div className="league-full">정원 마감</div>
+                    ) : (
+                      <div className="league-available">선택 가능</div>
+                    )}
                   </div>
-                  <h3 className="league-name">{league.name}</h3>
-                  <div className="league-info">
-                    <span className="league-teams">
-                      <span className="info-icon">👥</span>
-                      {league.current_teams || 0} / {league.max_teams} 팀
-                    </span>
-                  </div>
-                  {league.current_teams >= league.max_teams && (
-                    <div className="league-full">정원 초과</div>
-                  )}
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
