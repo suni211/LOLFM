@@ -1,10 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const mariadb = require('mariadb');
 const http = require('http');
 const { Server } = require('socket.io');
 const AuthService = require('./services/authService');
+const pool = require('./database/pool');
 
 dotenv.config();
 
@@ -38,17 +38,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// 데이터베이스 연결 풀 생성
-const pool = mariadb.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'lolfm',
-  connectionLimit: 5
-});
-
-// JWT 인증 미들웨어 (pool 생성 후)
+// JWT 인증 미들웨어
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
@@ -78,15 +68,6 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// 데이터베이스 연결 테스트
-pool.getConnection()
-  .then(conn => {
-    console.log('✅ MariaDB 연결 성공');
-    conn.release();
-  })
-  .catch(err => {
-    console.error('❌ MariaDB 연결 실패:', err);
-  });
 
 // 정적 파일 서빙 (업로드된 파일)
 const path = require('path');
@@ -219,6 +200,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// NotificationService에 io 전달 (순환 의존성 방지)
+const NotificationService = require('./services/notificationService');
+NotificationService.setIO(io);
+
 // 게임 시간 자동 진행 시작 (6시간 = 1달)
 const GameTimeService = require('./services/gameTimeService');
 GameTimeService.startAutoAdvance(); // 6시간마다 1달 진행
@@ -259,6 +244,6 @@ server.listen(PORT, () => {
   console.log(`⏰ 게임 시간 자동 진행이 시작되었습니다. (1시간 = 1달)`);
 });
 
-// 데이터베이스 풀을 전역으로 내보내기
+// 전역으로 내보내기 (하위 호환성 유지)
 module.exports = { app, server, io, pool };
 

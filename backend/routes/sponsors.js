@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const SponsorService = require('../services/sponsorService');
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 // 스폰서 제안 받기
 router.get('/offer/:teamId', async (req, res) => {

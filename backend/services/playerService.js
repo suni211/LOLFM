@@ -1,4 +1,4 @@
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 /**
  * 선수 관리 서비스

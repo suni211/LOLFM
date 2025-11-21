@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const PlayerService = require('../services/playerService');
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 // 선수 목록 조회
 router.get('/team/:teamId', async (req, res) => {

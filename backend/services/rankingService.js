@@ -1,4 +1,4 @@
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 /**
  * 랭킹 서비스

@@ -1,6 +1,18 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+// Socket.IO 서버 URL (환경 변수 또는 기본값)
+// API URL에서 /api를 제거한 기본 URL 사용
+const getSocketURL = () => {
+  if (process.env.REACT_APP_SOCKET_URL) {
+    return process.env.REACT_APP_SOCKET_URL;
+  }
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL.replace('/api', '');
+  }
+  return 'http://localhost:5000';
+};
+
+const SOCKET_URL = getSocketURL();
 
 class SocketService {
   constructor() {
@@ -17,7 +29,11 @@ class SocketService {
 
     this.socket = io(SOCKET_URL, {
       withCredentials: true,
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      path: '/socket.io',
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
     });
 
     this.socket.on('connect', () => {

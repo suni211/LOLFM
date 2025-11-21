@@ -42,7 +42,7 @@ router.get('/warning/:teamId', async (req, res) => {
 router.get('/records/:teamId', async (req, res) => {
   try {
     const { teamId } = req.params;
-    const { pool } = require('../server');
+    const pool = require('../database/pool');
     const conn = await pool.getConnection();
     
     const records = await conn.query(
@@ -65,7 +65,7 @@ router.get('/records/:teamId', async (req, res) => {
 router.get('/bankruptcy-history/:teamId', async (req, res) => {
   try {
     const { teamId } = req.params;
-    const { pool } = require('../server');
+    const pool = require('../database/pool');
     const conn = await pool.getConnection();
     
     const history = await conn.query(

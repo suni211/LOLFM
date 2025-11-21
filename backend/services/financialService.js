@@ -1,4 +1,4 @@
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 /**
  * 시설 유지비 계산

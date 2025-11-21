@@ -1,4 +1,4 @@
-const { pool } = require('../server');
+const pool = require('../database/pool');
 const MatchService = require('./matchService');
 
 /**

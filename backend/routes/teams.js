@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middleware/upload');
-const { pool } = require('../server');
+const pool = require('../database/pool');
 const path = require('path');
 const fs = require('fs');
 

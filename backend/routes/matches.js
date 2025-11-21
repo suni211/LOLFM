@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const MatchService = require('../services/matchService');
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 // 경기 시뮬레이션
 router.post('/:matchId/simulate', async (req, res) => {

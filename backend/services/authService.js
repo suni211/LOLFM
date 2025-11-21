@@ -1,4 +1,4 @@
-const { pool } = require('../server');
+const pool = require('../database/pool');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 

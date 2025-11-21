@@ -1,10 +1,17 @@
-const { pool } = require('../server');
-const { io } = require('../server');
+const pool = require('../database/pool');
+
+// io는 동적으로 가져오기 (순환 의존성 방지)
+let io = null;
 
 /**
  * 알림 서비스
  */
 class NotificationService {
+  // io 설정 (server.js에서 호출)
+  static setIO(socketIO) {
+    io = socketIO;
+  }
+
   // 알림 생성
   static async createNotification(userId, teamId, type, title, message, priority = 'MEDIUM') {
     const conn = await pool.getConnection();

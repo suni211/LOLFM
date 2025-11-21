@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const EventService = require('../services/eventService');
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 // 랜덤 이벤트 생성
 router.post('/generate', async (req, res) => {

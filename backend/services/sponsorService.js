@@ -1,4 +1,4 @@
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 /**
  * 스폰서 시스템 서비스

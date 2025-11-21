@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const NotificationService = require('../services/notificationService');
-const { pool } = require('../server');
+const pool = require('../database/pool');
 
 // 알림 조회
 router.get('/', async (req, res) => {
