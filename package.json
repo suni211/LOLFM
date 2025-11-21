@@ -1,0 +1,17 @@
+{
+  "name": "lolfm",
+  "version": "1.0.0",
+  "description": "리그 오브 레전드 경영 시뮬레이션 게임",
+  "scripts": {
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "install-all": "npm run install-backend && npm run install-frontend",
+    "dev-backend": "cd backend && npm run dev",
+    "dev-frontend": "cd frontend && npm start",
+    "build-frontend": "cd frontend && npm run build"
+  },
+  "keywords": ["lol", "simulation", "management"],
+  "author": "",
+  "license": "ISC"
+}
+

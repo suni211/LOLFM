@@ -1,0 +1,74 @@
+.rankings {
+  padding: 20px;
+}
+
+.ranking-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ranking-tabs button {
+  padding: 10px 20px;
+  border: 2px solid #2196f3;
+  background: white;
+  color: #2196f3;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.ranking-tabs button:hover {
+  background: #e3f2fd;
+}
+
+.ranking-tabs button.active {
+  background: #2196f3;
+  color: white;
+}
+
+.ranking-list {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ranking-list h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ranking-table th {
+  padding: 12px;
+  text-align: left;
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #666;
+}
+
+.ranking-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.ranking-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.ranking-table tbody tr.top-three {
+  background: #fff9e6;
+  font-weight: 600;
+}
+
+.ranking-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
