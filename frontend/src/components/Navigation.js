@@ -103,14 +103,14 @@ function Navigation({ user, onLogout, team }) {
             <div className="stat-item">
               <span className="stat-icon">📅</span>
               <div className="stat-content">
-                <span className="stat-label">게임 날짜</span>
+                <span className="stat-label">날짜</span>
                 <span className="stat-value">{formatDate()}</span>
               </div>
             </div>
             <div className="stat-item">
               <span className="stat-icon">💰</span>
               <div className="stat-content">
-                <span className="stat-label">보유 자금</span>
+                <span className="stat-label">자금</span>
                 <span className="stat-value">{formatMoney(team.money || finances?.current_money || 0)}</span>
               </div>
             </div>

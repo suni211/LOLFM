@@ -3,8 +3,11 @@ const router = express.Router();
 const NotificationService = require('../services/notificationService');
 const pool = require('../database/pool');
 
-// 인증 미들웨어 (server.js에서 가져오기)
-const authenticateToken = (req, res, next) => {
+// 인증 미들웨어 (server.js와 동일한 로직)
+const AuthService = require('../services/authService');
+const pool = require('../database/pool');
+
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -12,13 +15,25 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: '인증 토큰이 필요합니다.' });
   }
 
+  const decoded = AuthService.verifyToken(token);
+  if (!decoded) {
+    return res.status(403).json({ error: '유효하지 않은 토큰입니다.' });
+  }
+
+  // 사용자 정보를 req.user에 추가
+  const conn = await pool.getConnection();
   try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    req.user = decoded;
+    const users = await conn.query('SELECT * FROM users WHERE id = ?', [decoded.id]);
+    if (users.length === 0) {
+      return res.status(403).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+    req.user = users[0];
     next();
   } catch (error) {
-    return res.status(403).json({ error: '유효하지 않은 토큰입니다.' });
+    console.error('인증 처리 오류:', error);
+    return res.status(500).json({ error: '인증 처리 중 오류가 발생했습니다.' });
+  } finally {
+    conn.release();
   }
 };
 

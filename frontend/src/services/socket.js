@@ -1,31 +1,33 @@
 import { io } from 'socket.io-client';
 
-// Socket.IO 서버 URL (환경 변수 또는 기본값)
-// API URL에서 /api를 제거한 기본 URL 사용
+// Socket.IO 서버 URL - 런타임에 결정 (빌드 시점이 아닌 실행 시점)
 const getSocketURL = () => {
-  // 프로덕션 환경에서는 https://berrple.com 사용
-  if (window.location.hostname === 'berrple.com' || window.location.hostname === 'www.berrple.com') {
+  if (typeof window === 'undefined') {
+    return 'http://localhost:5000';
+  }
+  
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // 프로덕션 환경 강제 설정 (가장 우선)
+  if (hostname === 'berrple.com' || hostname === 'www.berrple.com') {
     return 'https://berrple.com';
   }
   
-  // 환경 변수 확인
-  if (process.env.REACT_APP_SOCKET_URL) {
-    const url = process.env.REACT_APP_SOCKET_URL;
-    // 포트 번호 제거 (Nginx를 통해 연결)
-    return url.replace(/:3000|:5000/g, '');
+  // 로컬 환경
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5000';
   }
   
-  if (process.env.REACT_APP_API_URL) {
-    const url = process.env.REACT_APP_API_URL.replace('/api', '');
-    // 포트 번호 제거
-    return url.replace(/:3000|:5000/g, '');
-  }
-  
-  return 'http://localhost:5000';
+  // 환경 변수 확인 (런타임 - 빌드 시점 값이 아닌 실제 값)
+  // React는 빌드 시점에 환경 변수를 번들에 포함시키므로
+  // 런타임에는 window.location을 기준으로 결정
+  const baseUrl = `${protocol}//${hostname}`;
+  return baseUrl;
 };
 
 const SOCKET_URL = getSocketURL();
-console.log('🔌 Socket.IO 연결 URL:', SOCKET_URL);
+console.log('🔌 Socket.IO 연결 URL (초기):', SOCKET_URL);
 
 class SocketService {
   constructor() {
@@ -40,38 +42,36 @@ class SocketService {
       return;
     }
 
-    // URL에서 포트 제거 (프로덕션에서는 Nginx를 통해 연결)
-    let socketUrl = SOCKET_URL;
+    // 런타임에 URL 재계산 (항상 최신 값 사용)
+    let socketUrl = getSocketURL();
     
-    // 프로덕션 환경 강제 설정
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      if (hostname === 'berrple.com' || hostname === 'www.berrple.com') {
-        socketUrl = 'https://berrple.com';
-      } else if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-        socketUrl = 'http://localhost:5000';
-      }
-    }
-    
-    // 포트 번호 강제 제거
+    // 포트 번호 강제 제거 (모든 경우)
     socketUrl = socketUrl.replace(/:3000|:5000/g, '');
     
     // 프로토콜 확인 및 수정
     if (typeof window !== 'undefined') {
-      if (window.location.protocol === 'https:' && socketUrl.startsWith('http://')) {
+      const protocol = window.location.protocol;
+      if (protocol === 'https:' && socketUrl.startsWith('http://')) {
         socketUrl = socketUrl.replace('http://', 'https://');
+      }
+      if (protocol === 'http:' && socketUrl.startsWith('https://')) {
+        socketUrl = socketUrl.replace('https://', 'http://');
       }
     }
     
     console.log('🔌 Socket.IO 연결 시도:', socketUrl);
+    console.log('🔌 현재 호스트:', typeof window !== 'undefined' ? window.location.hostname : 'N/A');
+    console.log('🔌 현재 프로토콜:', typeof window !== 'undefined' ? window.location.protocol : 'N/A');
     
     // 기존 연결이 있으면 먼저 끊기
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      this.isConnected = false;
     }
     
-    this.socket = io(socketUrl, {
+    // socket.io-client 옵션
+    const socketOptions = {
       withCredentials: true,
       transports: ['websocket', 'polling'],
       path: '/socket.io',
@@ -79,10 +79,14 @@ class SocketService {
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
       autoConnect: true,
-      forceNew: true, // 강제로 새 연결 생성
+      forceNew: true,
       upgrade: true,
       rememberUpgrade: false
-    });
+    };
+    
+    console.log('🔌 Socket.IO 옵션:', socketOptions);
+    
+    this.socket = io(socketUrl, socketOptions);
 
     this.socket.on('connect', () => {
       console.log('✅ Socket.IO 연결 성공');
