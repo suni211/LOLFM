@@ -20,7 +20,9 @@
 cd ~/LOLFM
 mysql -u lolfm_user -p lolfm << EOF
 ALTER TABLE teams ADD COLUMN IF NOT EXISTS abbreviation VARCHAR(10) AFTER name;
+SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE players;
+SET FOREIGN_KEY_CHECKS = 1;
 EOF
 
 # 2. 실제 선수 데이터 삽입
