@@ -41,10 +41,11 @@ router.post('/create', authenticateToken, async (req, res) => {
     
     // 팀 소유권 확인
     const conn = await pool.getConnection();
-    const [team] = await conn.query('SELECT * FROM teams WHERE id = ? AND user_id = ?', [teamId, userId]);
+    const teamRows = await conn.query('SELECT * FROM teams WHERE id = ? AND user_id = ?', [teamId, userId]);
     conn.release();
     
-    if (!team || team.length === 0) {
+    const teams = Array.isArray(teamRows) && teamRows.length > 0 ? teamRows : [];
+    if (!teams || teams.length === 0) {
       return res.status(403).json({ error: '팀 소유권이 없습니다.' });
     }
     
@@ -64,7 +65,7 @@ router.post('/:scoutId/run', authenticateToken, async (req, res) => {
     
     // 스카우트 소유권 확인
     const conn = await pool.getConnection();
-    const scouts = await conn.query(
+    const scoutRows = await conn.query(
       `SELECT s.*, t.user_id 
        FROM scouts s 
        JOIN teams t ON s.team_id = t.id 
@@ -73,12 +74,19 @@ router.post('/:scoutId/run', authenticateToken, async (req, res) => {
     );
     conn.release();
     
+    // MariaDB query는 배열을 반환하므로 첫 번째 요소가 실제 결과 배열
+    const scouts = Array.isArray(scoutRows) && scoutRows.length > 0 ? scoutRows : [];
+    
     if (!scouts || scouts.length === 0) {
       return res.status(404).json({ error: '스카우트를 찾을 수 없습니다.' });
     }
     
     const scout = scouts[0];
-    if (!scout || scout.user_id !== req.user.id) {
+    if (!scout) {
+      return res.status(404).json({ error: '스카우트를 찾을 수 없습니다.' });
+    }
+    
+    if (!scout.user_id || scout.user_id !== req.user.id) {
       return res.status(403).json({ error: '스카우트 소유권이 없습니다.' });
     }
     
@@ -98,10 +106,11 @@ router.get('/team/:teamId', authenticateToken, async (req, res) => {
     
     // 팀 소유권 확인
     const conn = await pool.getConnection();
-    const [team] = await conn.query('SELECT * FROM teams WHERE id = ? AND user_id = ?', [teamId, userId]);
+    const teamRows = await conn.query('SELECT * FROM teams WHERE id = ? AND user_id = ?', [teamId, userId]);
     conn.release();
     
-    if (!team || team.length === 0) {
+    const teams = Array.isArray(teamRows) && teamRows.length > 0 ? teamRows : [];
+    if (!teams || teams.length === 0) {
       return res.status(403).json({ error: '팀 소유권이 없습니다.' });
     }
     
@@ -122,10 +131,11 @@ router.get('/results/:teamId', authenticateToken, async (req, res) => {
     
     // 팀 소유권 확인
     const conn = await pool.getConnection();
-    const [team] = await conn.query('SELECT * FROM teams WHERE id = ? AND user_id = ?', [teamId, userId]);
+    const teamRows = await conn.query('SELECT * FROM teams WHERE id = ? AND user_id = ?', [teamId, userId]);
     conn.release();
     
-    if (!team || team.length === 0) {
+    const teams = Array.isArray(teamRows) && teamRows.length > 0 ? teamRows : [];
+    if (!teams || teams.length === 0) {
       return res.status(403).json({ error: '팀 소유권이 없습니다.' });
     }
     
