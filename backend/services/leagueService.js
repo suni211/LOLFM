@@ -23,8 +23,10 @@ class LeagueService {
         [leagueId]
       );
       
-      const currentTeams = teamCount[0].count;
-      const neededTeams = league.max_teams - currentTeams;
+      // BigInt를 Number로 명시적 변환
+      const currentTeams = Number(teamCount[0].count);
+      const maxTeams = Number(league.max_teams);
+      const neededTeams = maxTeams - currentTeams;
       
       if (neededTeams <= 0) {
         return { message: '리그가 이미 꽉 찼습니다.' };
@@ -389,13 +391,15 @@ class LeagueService {
           [league.id]
         );
         
-        const currentTeams = teamCount[0].count;
-        const neededTeams = league.max_teams - currentTeams;
+        // BigInt를 Number로 명시적 변환
+        const currentTeams = Number(teamCount[0].count);
+        const maxTeams = Number(league.max_teams);
+        const neededTeams = maxTeams - currentTeams;
         
         if (neededTeams > 0) {
           console.log(`리그 ${league.id} (${league.name})에 ${neededTeams}개의 AI 팀 생성 중...`);
           await this.fillLeagueWithAITeams(league.id);
-          totalCreated += neededTeams;
+          totalCreated += Number(neededTeams);
         }
       }
       
