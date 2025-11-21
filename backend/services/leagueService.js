@@ -230,11 +230,23 @@ class LeagueService {
       const [gameTime] = await conn.query('SELECT * FROM game_time WHERE id = 1');
       const seasonYear = gameTime.current_year;
       
-      // 기존 스케줄 삭제
-      await conn.query(
-        'DELETE FROM matches WHERE league_id = ? AND season_year = ?',
-        [leagueId, seasonYear]
-      );
+      // 기존 스케줄 삭제 (season_year 컬럼이 있으면 사용, 없으면 전체 삭제)
+      try {
+        await conn.query(
+          'DELETE FROM matches WHERE league_id = ? AND season_year = ?',
+          [leagueId, seasonYear]
+        );
+      } catch (error) {
+        // season_year 컬럼이 없으면 전체 삭제
+        if (error.code === 'ER_BAD_FIELD_ERROR') {
+          await conn.query(
+            'DELETE FROM matches WHERE league_id = ?',
+            [leagueId]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       // 라운드 로빈 방식으로 스케줄 생성 (홈/어웨이)
       const teamIds = teams.map(t => t.id);
@@ -265,13 +277,27 @@ class LeagueService {
       let matchDate = new Date(seasonYear, 2, 1); // 3월 1일
       
       for (const match of matches) {
-        await conn.query(
-          `INSERT INTO matches (
-            league_id, home_team_id, away_team_id, match_date, 
-            season_year, status
-          ) VALUES (?, ?, ?, ?, ?, 'scheduled')`,
-          [leagueId, match.home, match.away, matchDate.toISOString().split('T')[0], seasonYear]
-        );
+        // season_year 컬럼이 있는지 확인
+        const columns = await conn.query('SHOW COLUMNS FROM matches LIKE "season_year"');
+        const hasSeasonYear = columns.length > 0;
+        
+        if (hasSeasonYear) {
+          await conn.query(
+            `INSERT INTO matches (
+              league_id, home_team_id, away_team_id, match_date, 
+              season_year, status
+            ) VALUES (?, ?, ?, ?, ?, 'scheduled')`,
+            [leagueId, match.home, match.away, matchDate.toISOString().split('T')[0], seasonYear]
+          );
+        } else {
+          await conn.query(
+            `INSERT INTO matches (
+              league_id, home_team_id, away_team_id, match_date, 
+              status
+            ) VALUES (?, ?, ?, ?, 'scheduled')`,
+            [leagueId, match.home, match.away, matchDate.toISOString().split('T')[0]]
+          );
+        }
         
         // 다음 경기일 (3일 후)
         matchDate.setDate(matchDate.getDate() + 3);
@@ -329,37 +355,54 @@ class LeagueService {
     }
   }
   
-  // 유저 팀이 리그에 참가할 때 AI 팀 대체
+  // 유저 팀이 리그에 참가할 때 AI 팀 대체 (언제든지 가능)
   static async replaceAITeamWithUser(leagueId, userId, teamName, abbreviation, logoPath) {
     let conn;
     try {
       conn = await pool.getConnection();
       
-      // 리그에서 가장 최근에 생성된 AI 팀 찾기
-      const [aiTeam] = await conn.query(
+      // 리그에서 AI 팀 찾기 (is_ai = TRUE 또는 user_id IS NULL)
+      const aiTeams = await conn.query(
         `SELECT id FROM teams 
-         WHERE league_id = ? AND is_ai = TRUE 
-         ORDER BY id DESC 
+         WHERE league_id = ? AND (is_ai = TRUE OR user_id IS NULL)
+         ORDER BY id ASC 
          LIMIT 1`,
         [leagueId]
       );
       
-      if (!aiTeam) {
+      if (!aiTeams || aiTeams.length === 0) {
         throw new Error('대체할 AI 팀이 없습니다.');
       }
       
+      const aiTeam = aiTeams[0];
       const aiTeamId = aiTeam.id;
       
       // AI 팀의 모든 선수 삭제
       await conn.query('DELETE FROM players WHERE team_id = ?', [aiTeamId]);
       
+      // AI 팀의 시설 정보는 유지 (경기장, 숙소 등)
+      
       // AI 팀을 유저 팀으로 변경
-      await conn.query(
-        `UPDATE teams 
-         SET user_id = ?, name = ?, abbreviation = ?, logo_path = ?, is_ai = FALSE
-         WHERE id = ?`,
-        [userId, teamName, abbreviation, logoPath, aiTeamId]
-      );
+      const columns = await conn.query('SHOW COLUMNS FROM teams LIKE "is_ai"');
+      const hasIsAi = columns.length > 0;
+      
+      if (hasIsAi) {
+        await conn.query(
+          `UPDATE teams 
+           SET user_id = ?, name = ?, abbreviation = ?, logo_path = ?, is_ai = FALSE
+           WHERE id = ?`,
+          [userId, teamName, abbreviation, logoPath, aiTeamId]
+        );
+      } else {
+        await conn.query(
+          `UPDATE teams 
+           SET user_id = ?, name = ?, abbreviation = ?, logo_path = ?
+           WHERE id = ?`,
+          [userId, teamName, abbreviation, logoPath, aiTeamId]
+        );
+      }
+      
+      console.log(`AI 팀 ${aiTeamId}가 유저 팀으로 대체되었습니다.`);
       
       return { 
         message: 'AI 팀이 유저 팀으로 대체되었습니다.',

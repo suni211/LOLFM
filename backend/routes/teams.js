@@ -100,16 +100,26 @@ router.post('/', upload.single('logo'), async (req, res) => {
         [league_id]
       );
       
-      const currentTeams = teamCount[0].count;
+      const currentTeams = Number(teamCount[0].count);
       const logoPath = req.file ? `/uploads/${req.file.filename}` : null;
       
-      if (currentTeams >= league.max_teams) {
-        // 리그가 꽉 찼다면 AI 팀 대체
-        console.log('리그가 꽉 참 - AI 팀 대체');
+      // 리그에 AI 팀이 있으면 항상 AI 팀을 대체 (리그가 꽉 찼든 안 찼든)
+      const aiTeams = await conn.query(
+        'SELECT id FROM teams WHERE league_id = ? AND (is_ai = TRUE OR user_id IS NULL) LIMIT 1',
+        [league_id]
+      );
+      
+      if (aiTeams.length > 0) {
+        // AI 팀이 있으면 대체
+        console.log('AI 팀 대체');
         const replaceResult = await LeagueService.replaceAITeamWithUser(
           league_id, user_id, name, abbreviation, logoPath
         );
         teamId = replaceResult.teamId;
+      } else if (currentTeams >= league.max_teams) {
+        // AI 팀이 없고 리그가 꽉 찼다면 에러
+        conn.release();
+        return res.status(400).json({ error: '리그가 꽉 찼고 대체할 AI 팀이 없습니다.' });
       } else {
         // 리그에 자리가 있으면 일반 생성
         console.log('리그에 자리 있음 - 팀 생성');
@@ -139,7 +149,9 @@ router.post('/', upload.single('logo'), async (req, res) => {
           [league_id]
         );
         
-        if (newTeamCount[0].count < league.max_teams) {
+        const currentCount = Number(newTeamCount[0].count);
+        
+        if (currentCount < league.max_teams) {
           // 아직 꽉 안 찼다면 AI 팀으로 채우기
           console.log('AI 팀으로 리그 채우기...');
           await LeagueService.fillLeagueWithAITeams(league_id);
@@ -151,7 +163,7 @@ router.post('/', upload.single('logo'), async (req, res) => {
           [league_id]
         );
         
-        if (finalTeamCount[0].count >= league.max_teams) {
+        if (Number(finalTeamCount[0].count) >= league.max_teams) {
           console.log('리그 꽉 참 - 스케줄 생성');
           await LeagueService.generateLeagueSchedule(league_id);
         }

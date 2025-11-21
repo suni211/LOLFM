@@ -64,7 +64,7 @@ router.post('/:scoutId/run', authenticateToken, async (req, res) => {
     
     // 스카우트 소유권 확인
     const conn = await pool.getConnection();
-    const [scout] = await conn.query(
+    const scouts = await conn.query(
       `SELECT s.*, t.user_id 
        FROM scouts s 
        JOIN teams t ON s.team_id = t.id 
@@ -73,11 +73,12 @@ router.post('/:scoutId/run', authenticateToken, async (req, res) => {
     );
     conn.release();
     
-    if (!scout || scout.length === 0) {
+    if (!scouts || scouts.length === 0) {
       return res.status(404).json({ error: '스카우트를 찾을 수 없습니다.' });
     }
     
-    if (scout[0].user_id !== req.user.id) {
+    const scout = scouts[0];
+    if (!scout || scout.user_id !== req.user.id) {
       return res.status(403).json({ error: '스카우트 소유권이 없습니다.' });
     }
     

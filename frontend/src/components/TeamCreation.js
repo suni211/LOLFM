@@ -116,9 +116,32 @@ function TeamCreation({ user, onTeamCreated }) {
       });
 
       console.log('팀 생성 완료:', response.data);
+      // 성공 시 선수 선택으로 이동
       onTeamCreated(response.data);
     } catch (error) {
       console.error('팀 생성 오류:', error);
+      
+      // 에러가 발생했지만 실제로 팀이 생성되었을 수 있음 (네트워크 오류 등)
+      // 팀이 생성되었는지 확인
+      try {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const token = authService.getTokenValue();
+        const checkResponse = await axios.get(`${API_URL}/teams/user/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        
+        // 팀이 생성되었다면 선수 선택으로 이동
+        if (checkResponse.data) {
+          console.log('팀이 이미 생성되어 있음:', checkResponse.data);
+          onTeamCreated(checkResponse.data);
+          return;
+        }
+      } catch (checkError) {
+        console.error('팀 확인 오류:', checkError);
+      }
+      
+      // 팀이 생성되지 않았다면 에러 메시지 표시
       setError(error.response?.data?.error || error.message || '팀 생성에 실패했습니다.');
     } finally {
       setLoading(false);
