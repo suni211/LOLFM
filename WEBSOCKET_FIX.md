@@ -99,7 +99,7 @@ sudo systemctl restart nginx
 1. **백엔드 서버 확인**
    ```bash
    pm2 logs lolfm-backend
-   curl http://localhost:5000/api/health
+   ㅎㅎ
    ```
 
 2. **프론트엔드 빌드 파일 확인**
