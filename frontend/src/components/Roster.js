@@ -105,33 +105,33 @@ const Roster = ({ team }) => {
                     </div>
                     <div className="player-info">
                       <div className="player-detail">
-                        <span>나이:</span>
+                        <span>🎂 나이</span>
                         <span>{player.age}세</span>
                       </div>
                       <div className="player-detail">
-                        <span>국적:</span>
+                        <span>🌍 국적</span>
                         <span>{player.nationality}</span>
                       </div>
                       <div className="player-detail">
-                        <span>급여:</span>
+                        <span>💰 급여</span>
                         <span>{formatMoney(player.salary)}</span>
                       </div>
                     </div>
                     <div className="player-stats">
                       <div className="stat-item">
-                        <span className="stat-label">멘탈</span>
+                        <span className="stat-label">🧠 멘탈</span>
                         <span className="stat-value">{player.mental}</span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-label">한타</span>
+                        <span className="stat-label">⚔️ 한타</span>
                         <span className="stat-value">{player.teamfight}</span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-label">라인전</span>
+                        <span className="stat-label">🎯 라인전</span>
                         <span className="stat-value">{player.laning}</span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-label">CS</span>
+                        <span className="stat-label">💎 CS</span>
                         <span className="stat-value">{player.cs_skill}</span>
                       </div>
                     </div>

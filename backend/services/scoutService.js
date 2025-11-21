@@ -30,17 +30,20 @@ class ScoutService {
     let conn;
     try {
       conn = await pool.getConnection();
+      await conn.beginTransaction();
       
       // 스카우트 정보 조회
       const scoutRows = await conn.query('SELECT * FROM scouts WHERE id = ?', [scoutId]);
       const scouts = Array.isArray(scoutRows) && scoutRows.length > 0 ? scoutRows : [];
       
       if (!scouts || scouts.length === 0) {
+        await conn.rollback();
         throw new Error('스카우트를 찾을 수 없습니다.');
       }
       
       const scout = scouts[0];
       if (!scout || !scout.team_id) {
+        await conn.rollback();
         throw new Error('스카우트 정보가 올바르지 않습니다.');
       }
       
@@ -49,29 +52,49 @@ class ScoutService {
       const teams = Array.isArray(teamRows) && teamRows.length > 0 ? teamRows : [];
       
       if (!teams || teams.length === 0) {
+        await conn.rollback();
         throw new Error('팀을 찾을 수 없습니다.');
       }
       
       const team = teams[0];
-      if (Number(team.money) < Number(scout.cost_per_scout)) {
+      const cost = Number(scout.cost_per_scout);
+      const currentMoney = Number(team.money);
+      
+      if (currentMoney < cost) {
+        await conn.rollback();
         throw new Error('자금이 부족합니다.');
       }
       
       // 스카우트 비용 차감
+      const newMoney = currentMoney - cost;
       await conn.query(
-        'UPDATE teams SET money = money - ? WHERE id = ?',
-        [scout.cost_per_scout, scout.team_id]
+        'UPDATE teams SET money = ? WHERE id = ?',
+        [newMoney, scout.team_id]
       );
+      
+      // 재무 기록 추가
+      try {
+        await conn.query(
+          `INSERT INTO financial_records (team_id, type, category, amount, description, record_date)
+           VALUES (?, 'EXPENSE', 'SCOUT', ?, ?, CURDATE())`,
+          [scout.team_id, cost, `스카우트 실행: ${scout.name || '스카우트'} (레벨 ${scout.level || 1})`]
+        );
+      } catch (recordError) {
+        // financial_records 테이블이 없거나 오류가 발생해도 계속 진행
+        console.warn('재무 기록 추가 실패:', recordError.message);
+      }
       
       // 선수 발견 확률 계산
       const discoveryChance = Number(scout.discovery_rate) / 100;
       const found = Math.random() < discoveryChance;
       
       if (!found) {
+        await conn.commit();
         return {
           success: false,
           message: '스카우트가 선수를 발견하지 못했습니다.',
-          cost: scout.cost_per_scout
+          cost: cost,
+          newBalance: newMoney
         };
       }
       
@@ -117,6 +140,8 @@ class ScoutService {
         [scoutId, scout.team_id, player.id]
       );
       
+      await conn.commit();
+      
       return {
         success: true,
         message: '새로운 선수를 발견했습니다!',
@@ -135,10 +160,18 @@ class ScoutService {
           condition: player.condition,
           leadership: player.leadership
         },
-        cost: scout.cost_per_scout
+        cost: cost,
+        newBalance: newMoney
       };
     } catch (error) {
       console.error('스카우트 실행 오류:', error);
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch (rollbackError) {
+          console.error('롤백 오류:', rollbackError);
+        }
+      }
       throw error;
     } finally {
       if (conn) conn.release();
