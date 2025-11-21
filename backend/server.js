@@ -8,6 +8,11 @@ const pool = require('./database/pool');
 
 dotenv.config();
 
+// BigInt 직렬화 처리
+BigInt.prototype.toJSON = function() {
+  return this.toString();
+};
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
