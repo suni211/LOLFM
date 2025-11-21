@@ -9,19 +9,26 @@ router.get('/region/:regionId', async (req, res) => {
     const { regionId } = req.params;
     conn = await pool.getConnection();
     
-    const leagues = await conn.query(`
-      SELECT 
-        l.*,
-        (SELECT COUNT(*) FROM teams WHERE league_id = l.id) as current_teams
-      FROM leagues l
-      WHERE l.region_id = ?
-      ORDER BY l.division
-    `, [regionId]);
+    // 먼저 리그 정보 조회
+    const leagues = await conn.query(
+      'SELECT * FROM leagues WHERE region_id = ? ORDER BY division',
+      [regionId]
+    );
     
+    // 각 리그의 현재 팀 수 조회
+    for (let league of leagues) {
+      const teamCount = await conn.query(
+        'SELECT COUNT(*) as count FROM teams WHERE league_id = ?',
+        [league.id]
+      );
+      league.current_teams = teamCount[0]?.count || 0;
+    }
+    
+    console.log('리그 조회 결과:', leagues);
     res.json(leagues);
   } catch (error) {
     console.error('리그 조회 오류:', error);
-    res.status(500).json({ error: '리그 조회 실패' });
+    res.status(500).json({ error: '리그 조회 실패', details: error.message });
   } finally {
     if (conn) conn.release();
   }
