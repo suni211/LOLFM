@@ -115,6 +115,8 @@ app.use('/api/game-time', gameTimeRoutes);
 app.use('/api/training', trainingRoutes);
 const friendlyMatchRoutes = require('./routes/friendlyMatches');
 app.use('/api/friendly-matches', friendlyMatchRoutes);
+const scoutRoutes = require('./routes/scouts');
+app.use('/api/scouts', scoutRoutes);
 
 // Google OAuth 2.0 인증 URL 생성
 app.get('/api/auth/google', (req, res) => {

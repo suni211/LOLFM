@@ -1,0 +1,277 @@
+.scouts-container {
+  padding: 20px;
+  color: #fff;
+  background: #0a0a0a;
+  min-height: 100vh;
+}
+
+.scouts-container h2 {
+  margin-bottom: 10px;
+  color: #00ff00;
+}
+
+.description {
+  color: #aaa;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.message.success {
+  background: #1a3a1a;
+  color: #00ff00;
+  border: 1px solid #00ff00;
+}
+
+.message.error {
+  background: #3a1a1a;
+  color: #ff4444;
+  border: 1px solid #ff4444;
+}
+
+.scouts-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.create-scout-section,
+.scouts-list-section {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.create-scout-section h3,
+.scouts-list-section h3 {
+  color: #00ff00;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ccc;
+  font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #00ff00;
+}
+
+.create-btn {
+  width: 100%;
+  padding: 12px;
+  background: #00ff00;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.create-btn:hover:not(:disabled) {
+  background: #00cc00;
+}
+
+.create-btn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.scouts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.scout-card {
+  background: #0a0a0a;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+.scout-info {
+  margin-bottom: 10px;
+}
+
+.scout-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #00ff00;
+  margin-bottom: 5px;
+}
+
+.scout-level {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.scout-stats {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.scout-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.position-select {
+  flex: 1;
+  padding: 8px;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.run-btn {
+  padding: 8px 16px;
+  background: #00ff00;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.run-btn:hover:not(:disabled) {
+  background: #00cc00;
+}
+
+.run-btn:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.scout-results-section {
+  background: #1a1a1a;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.scout-results-section h3 {
+  color: #00ff00;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.result-card {
+  background: #0a0a0a;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+.player-info {
+  margin-bottom: 10px;
+}
+
+.player-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #00ff00;
+  margin-bottom: 5px;
+}
+
+.player-position {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.player-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  color: #888;
+  font-size: 11px;
+}
+
+.result-actions {
+  margin-top: 10px;
+}
+
+.view-btn {
+  width: 100%;
+  padding: 8px;
+  background: #00ff00;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.view-btn:hover {
+  background: #00cc00;
+}
+
+.no-scouts,
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .scouts-content {
+    grid-template-columns: 1fr;
+  }
+}
+

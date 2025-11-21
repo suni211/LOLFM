@@ -256,6 +256,44 @@ router.get('/:playerId/stats', async (req, res) => {
   }
 });
 
+// 선수에게 에이전트 배정
+router.post('/:playerId/assign-agent', async (req, res) => {
+  let conn;
+  try {
+    const { playerId } = req.params;
+    const { agentId } = req.body;
+    
+    conn = await pool.getConnection();
+    
+    // 선수 정보 확인
+    const [player] = await conn.query('SELECT * FROM players WHERE id = ?', [playerId]);
+    if (!player || player.length === 0) {
+      return res.status(404).json({ error: '선수를 찾을 수 없습니다.' });
+    }
+    
+    // 에이전트 정보 확인
+    if (agentId) {
+      const [agent] = await conn.query('SELECT * FROM agents WHERE id = ?', [agentId]);
+      if (!agent || agent.length === 0) {
+        return res.status(404).json({ error: '에이전트를 찾을 수 없습니다.' });
+      }
+    }
+    
+    // 에이전트 배정
+    await conn.query(
+      'UPDATE players SET agent_id = ? WHERE id = ?',
+      [agentId || null, playerId]
+    );
+    
+    res.json({ success: true, message: '에이전트가 배정되었습니다.' });
+  } catch (error) {
+    console.error('에이전트 배정 오류:', error);
+    res.status(500).json({ error: '에이전트 배정 실패' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 // 선수 방출
 router.post('/:playerId/release', async (req, res) => {
   let conn;

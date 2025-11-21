@@ -19,6 +19,10 @@ import TransferMarket from './components/TransferMarket';
 import Statistics from './components/Statistics';
 import PlayerDetail from './components/PlayerDetail';
 import FriendlyMatches from './components/FriendlyMatches';
+import Scouts from './components/Scouts';
+import Agents from './components/Agents';
+import Roster from './components/Roster';
+import Events from './components/Events';
 import './App.css';
 
 function App() {
@@ -119,6 +123,10 @@ function App() {
                   <Route path="/league-standings" element={<LeagueStandings leagueId={team.league_id} />} />
                   <Route path="/rankings" element={<Rankings />} />
                   <Route path="/friendly-matches" element={<FriendlyMatches team={team} />} />
+                  <Route path="/scouts" element={<Scouts team={team} />} />
+                  <Route path="/agents" element={<Agents team={team} />} />
+                  <Route path="/roster" element={<Roster team={team} />} />
+                  <Route path="/events" element={<Events team={team} />} />
                   <Route path="/players/:playerId" element={<PlayerDetail />} />
                 </Routes>
               )}

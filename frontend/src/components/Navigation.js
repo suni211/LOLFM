@@ -146,9 +146,25 @@ function Navigation({ user, onLogout, team }) {
                 <span className="nav-icon">🏆</span>
                 <span className="nav-text">리그 순위</span>
               </Link>
+              <Link to="/roster" className={`nav-link ${isActive('/roster')}`}>
+                <span className="nav-icon">📋</span>
+                <span className="nav-text">로스터</span>
+              </Link>
               <Link to="/friendly-matches" className={`nav-link ${isActive('/friendly-matches')}`}>
                 <span className="nav-icon">🤝</span>
                 <span className="nav-text">친선 경기</span>
+              </Link>
+              <Link to="/scouts" className={`nav-link ${isActive('/scouts')}`}>
+                <span className="nav-icon">🔍</span>
+                <span className="nav-text">스카우트</span>
+              </Link>
+              <Link to="/agents" className={`nav-link ${isActive('/agents')}`}>
+                <span className="nav-icon">💼</span>
+                <span className="nav-text">에이전트</span>
+              </Link>
+              <Link to="/events" className={`nav-link ${isActive('/events')}`}>
+                <span className="nav-icon">📢</span>
+                <span className="nav-text">이벤트</span>
               </Link>
               <Link to="/rankings" className={`nav-link ${isActive('/rankings')}`}>
                 <span className="nav-icon">📊</span>

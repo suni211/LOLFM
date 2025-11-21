@@ -162,6 +162,19 @@ router.get('/:matchId/watch', async (req, res) => {
   }
 });
 
+// 다음 경기 스케줄 조회
+router.get('/upcoming/:teamId', async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const limit = parseInt(req.query.limit) || 5;
+    const matches = await MatchService.getUpcomingMatches(teamId, limit);
+    res.json(matches);
+  } catch (error) {
+    console.error('다음 경기 조회 오류:', error);
+    res.status(500).json({ error: '다음 경기 조회 실패' });
+  }
+});
+
 // 리그 순위 조회
 router.get('/league/:leagueId/standings', async (req, res) => {
   let conn;

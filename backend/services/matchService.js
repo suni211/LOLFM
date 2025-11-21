@@ -424,6 +424,42 @@ class MatchService {
       if (conn) conn.release();
     }
   }
+  
+  // 팀의 다음 경기 스케줄 조회 (예정된 경기만)
+  static async getUpcomingMatches(teamId, limit = 5) {
+    let conn;
+    try {
+      conn = await pool.getConnection();
+      
+      const [gameTime] = await conn.query('SELECT * FROM game_time WHERE id = 1');
+      const currentDate = gameTime.current_date || new Date();
+      const dateStr = typeof currentDate === 'string' ? currentDate.split('T')[0] : currentDate.toISOString().split('T')[0];
+      
+      const matches = await conn.query(
+        `SELECT m.*, 
+         ht.name as home_team_name, ht.logo_path as home_team_logo,
+         at.name as away_team_name, at.logo_path as away_team_logo,
+         l.name as league_name
+         FROM matches m
+         JOIN teams ht ON m.home_team_id = ht.id
+         JOIN teams at ON m.away_team_id = at.id
+         LEFT JOIN leagues l ON m.league_id = l.id
+         WHERE (m.home_team_id = ? OR m.away_team_id = ?)
+         AND DATE(m.match_date) >= ?
+         AND m.status = 'scheduled'
+         ORDER BY m.match_date ASC
+         LIMIT ?`,
+        [teamId, teamId, dateStr, limit]
+      );
+      
+      return matches;
+    } catch (error) {
+      console.error('다음 경기 조회 오류:', error);
+      return [];
+    } finally {
+      if (conn) conn.release();
+    }
+  }
 }
 
 module.exports = MatchService;
