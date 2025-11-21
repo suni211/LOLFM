@@ -1,0 +1,34 @@
+# App Engine 배포용 설정 파일
+runtime: nodejs18
+
+# Cloud SQL 연결 설정
+beta_settings:
+  cloud_sql_instances: YOUR_PROJECT_ID:YOUR_REGION:YOUR_INSTANCE_NAME
+
+# 환경 변수 설정
+env_variables:
+  DB_HOST: "/cloudsql/YOUR_PROJECT_ID:YOUR_REGION:YOUR_INSTANCE_NAME"
+  DB_PORT: "3306"
+  DB_USER: "lolfm_user"
+  DB_PASSWORD: "YOUR_DB_PASSWORD"
+  DB_NAME: "lolfm"
+  JWT_SECRET: "YOUR_JWT_SECRET"
+  SESSION_SECRET: "YOUR_SESSION_SECRET"
+  PORT: "8080"
+  NODE_ENV: "production"
+  FRONTEND_URL: "https://your-frontend-domain.com"
+  GOOGLE_CLIENT_ID: "YOUR_GOOGLE_CLIENT_ID"
+  GOOGLE_CLIENT_SECRET: "YOUR_GOOGLE_CLIENT_SECRET"
+  GOOGLE_CALLBACK_URL: "https://your-backend-domain.com/api/auth/google/callback"
+
+# 자동 스케일링 설정
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+
+# 리소스 설정
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10
+

@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS players (
   laning INT DEFAULT 50, -- 라인전 (1-100)
   jungling INT DEFAULT 50, -- 정글링 (1-100)
   cs_skill INT DEFAULT 50, -- CS 수급 (1-100)
-  condition INT DEFAULT 50, -- 컨디션 (1-100)
+  `condition` INT DEFAULT 50, -- 컨디션 (1-100)
   leadership INT DEFAULT 50, -- 오더력 (1-100)
   will INT DEFAULT 50, -- 의지 (1-100)
   competitiveness INT DEFAULT 50, -- 승부욕 (1-100)

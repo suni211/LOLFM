@@ -77,7 +77,7 @@ router.post('/custom', async (req, res) => {
 
     const result = await conn.query(
       `INSERT INTO players (name, nationality, position, team_id, is_custom, is_ai, 
-        mental, teamfight, laning, jungling, cs_skill, condition, leadership, 
+        mental, teamfight, laning, jungling, cs_skill, \`condition\`, leadership, 
         will, competitiveness, dirty_play, potential, overall, age)
        VALUES (?, ?, ?, ?, TRUE, FALSE, ?, ?, ?, ?, ?, 50, ?, ?, ?, ?, ?, ?, 18)`,
       [

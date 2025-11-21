@@ -1,0 +1,35 @@
+# Cloud Build를 사용한 배포 설정
+steps:
+  # 백엔드 빌드 및 배포
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'lolfm-backend'
+      - '--source'
+      - './backend'
+      - '--region'
+      - 'asia-northeast3'
+      - '--platform'
+      - 'managed'
+      - '--add-cloudsql-instances'
+      - 'YOUR_PROJECT_ID:YOUR_REGION:YOUR_INSTANCE_NAME'
+      - '--set-env-vars'
+      - 'DB_HOST=/cloudsql/YOUR_PROJECT_ID:YOUR_REGION:YOUR_INSTANCE_NAME,DB_PORT=3306,DB_USER=lolfm_user,DB_PASSWORD=YOUR_DB_PASSWORD,DB_NAME=lolfm,JWT_SECRET=YOUR_JWT_SECRET,SESSION_SECRET=YOUR_SESSION_SECRET,FRONTEND_URL=https://your-frontend-domain.com,GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET,GOOGLE_CALLBACK_URL=https://your-backend-domain.com/api/auth/google/callback'
+
+  # 프론트엔드 빌드 및 배포
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'lolfm-frontend'
+      - '--source'
+      - './frontend'
+      - '--region'
+      - 'asia-northeast3'
+      - '--platform'
+      - 'managed'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+

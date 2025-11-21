@@ -120,7 +120,7 @@ class PlayerService {
     const conn = await pool.getConnection();
     try {
       const player = await conn.query(
-        'SELECT condition, team_id FROM players WHERE id = ?',
+        'SELECT `condition`, team_id FROM players WHERE id = ?',
         [playerId]
       );
 
@@ -141,7 +141,7 @@ class PlayerService {
       }
 
       await conn.query(
-        'UPDATE players SET condition = ? WHERE id = ?',
+        'UPDATE players SET `condition` = ? WHERE id = ?',
         [newCondition, playerId]
       );
 
