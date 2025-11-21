@@ -5,19 +5,51 @@ import './LeagueStandings.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-function LeagueStandings({ leagueId }) {
+function LeagueStandings({ leagueId: propLeagueId, team }) {
   const [standings, setStandings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [leagues, setLeagues] = useState([]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState(propLeagueId || (team ? team.league_id : null));
+  const [regions, setRegions] = useState([]);
 
   useEffect(() => {
-    if (leagueId) {
+    loadRegions();
+    loadLeagues();
+  }, []);
+
+  useEffect(() => {
+    if (selectedLeagueId) {
       loadStandings();
-    } else {
-      setError('리그 정보가 없습니다.');
-      setLoading(false);
+    } else if (leagues.length > 0) {
+      // 리그가 선택되지 않았으면 첫 번째 리그 선택
+      setSelectedLeagueId(leagues[0].id);
     }
-  }, [leagueId]);
+  }, [selectedLeagueId, leagues]);
+
+  const loadRegions = async () => {
+    try {
+      const token = authService.getTokenValue();
+      const response = await axios.get(`${API_URL}/regions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRegions(response.data);
+    } catch (error) {
+      console.error('지역 로드 오류:', error);
+    }
+  };
+
+  const loadLeagues = async () => {
+    try {
+      const token = authService.getTokenValue();
+      const response = await axios.get(`${API_URL}/leagues`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setLeagues(response.data);
+    } catch (error) {
+      console.error('리그 로드 오류:', error);
+    }
+  };
 
   const loadStandings = async () => {
     try {
@@ -76,12 +108,51 @@ function LeagueStandings({ leagueId }) {
     return null;
   };
 
+  const getRegionName = (league) => {
+    if (!league) return '';
+    return league.region_name || regions.find(r => r.id === league.region_id)?.name || '';
+  };
+
+  const selectedLeague = leagues.find(l => l.id === selectedLeagueId);
+
   return (
     <div className="league-standings">
       <div className="page-header">
         <h1 className="page-title">🏆 리그 순위</h1>
         <p className="page-subtitle">현재 시즌 리그 순위표</p>
       </div>
+      
+      {/* 리그 선택 */}
+      {leagues.length > 0 && (
+        <div className="league-selector">
+          <label htmlFor="league-select">리그 선택: </label>
+          <select 
+            id="league-select"
+            value={selectedLeagueId || ''} 
+            onChange={(e) => setSelectedLeagueId(parseInt(e.target.value))}
+            className="league-select"
+          >
+            {regions.map(region => {
+              const regionLeagues = leagues.filter(l => l.region_id === region.id);
+              if (regionLeagues.length === 0) return null;
+              return (
+                <optgroup key={region.id} label={`${region.name} (${region.code})`}>
+                  {regionLeagues.map(league => (
+                    <option key={league.id} value={league.id}>
+                      {league.name} ({league.division}부)
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+          {selectedLeague && (
+            <span className="selected-league-info">
+              {getRegionName(selectedLeague)} - {selectedLeague.name}
+            </span>
+          )}
+        </div>
+      )}
       <div className="standings-container">
         <table className="standings-table">
           <thead>

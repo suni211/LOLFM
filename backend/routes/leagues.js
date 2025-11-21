@@ -3,6 +3,29 @@ const router = express.Router();
 const pool = require('../database/pool');
 const LeagueService = require('../services/leagueService');
 
+// 모든 리그 조회
+router.get('/', async (req, res) => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    const leagues = await conn.query(
+      `SELECT l.*, r.name as region_name, r.code as region_code
+       FROM leagues l
+       JOIN regions r ON l.region_id = r.id
+       ORDER BY r.id, l.division`
+    );
+    
+    const leaguesResponse = leagues.map(league => convertBigInt(league));
+    res.json(leaguesResponse);
+  } catch (error) {
+    console.error('리그 조회 오류:', error);
+    res.status(500).json({ error: '리그 조회 실패', details: error.message });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 // 지역별 리그 조회
 router.get('/region/:regionId', async (req, res) => {
   let conn;

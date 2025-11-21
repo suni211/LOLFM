@@ -30,17 +30,52 @@ class LeagueService {
         return { message: '리그가 이미 꽉 찼습니다.' };
       }
       
-      // AI 팀 생성
+      // AI 팀 생성 - 다양한 팀명
       const aiTeamNames = [
+        // 동물/자연 관련
         'Phoenix Rising', 'Dragon Warriors', 'Thunder Esports', 'Shadow Legends',
         'Titan Gaming', 'Viper Squad', 'Eagle Elite', 'Storm Riders',
         'Falcon Force', 'Wolf Pack', 'Lion Pride', 'Bear Clan',
-        'Shark Attack', 'Tiger Strike', 'Panther Gaming', 'Cobra Team'
+        'Shark Attack', 'Tiger Strike', 'Panther Gaming', 'Cobra Team',
+        'Falcon Knights', 'Dragon Lords', 'Thunder Bolts', 'Shadow Hunters',
+        'Eagle Warriors', 'Wolf Warriors', 'Lion Kings', 'Bear Force',
+        'Tiger Claws', 'Panther Elite', 'Cobra Strike', 'Shark Fin',
+        // 게이밍/전투 관련
+        'Blade Masters', 'Sword Saints', 'Axe Warriors', 'Spear Knights',
+        'Bow Rangers', 'Shield Guardians', 'Arrow Snipers', 'Dagger Assassins',
+        'Mace Crushers', 'Hammer Smashers', 'Crossbow Hunters', 'Whip Lashers',
+        // 에너지/원소 관련
+        'Fire Blaze', 'Ice Frost', 'Lightning Bolt', 'Wind Storm',
+        'Earth Quake', 'Water Wave', 'Light Ray', 'Dark Shadow',
+        'Thunder Strike', 'Flame Burst', 'Frost Bite', 'Storm Surge',
+        // 전설/신화 관련
+        'Legendary Heroes', 'Mythic Warriors', 'Epic Champions', 'Divine Guardians',
+        'Ancient Kings', 'Royal Knights', 'Noble Lords', 'Supreme Masters',
+        // 현대적 이름
+        'Neon Lights', 'Cyber Strike', 'Digital Force', 'Quantum Leap',
+        'Matrix Team', 'Pixel Warriors', 'Code Breakers', 'Data Storm',
+        // 지역/국가 스타일
+        'Northern Stars', 'Southern Winds', 'Eastern Dragons', 'Western Eagles',
+        'Central Titans', 'Coastal Sharks', 'Mountain Lions', 'Desert Vipers'
       ];
       
+      // 사용된 이름 추적 (중복 방지)
+      const usedNames = new Set();
+      
       for (let i = 0; i < neededTeams; i++) {
-        const teamName = aiTeamNames[Math.floor(Math.random() * aiTeamNames.length)] + ` ${i + 1}`;
-        const abbreviation = teamName.split(' ').map(w => w[0]).join('').substring(0, 5);
+        let teamName;
+        let attempts = 0;
+        
+        // 중복되지 않는 이름 찾기
+        do {
+          const baseName = aiTeamNames[Math.floor(Math.random() * aiTeamNames.length)];
+          const suffix = Math.floor(Math.random() * 1000); // 0-999 랜덤 숫자
+          teamName = `${baseName} ${suffix}`;
+          attempts++;
+        } while (usedNames.has(teamName) && attempts < 100);
+        
+        usedNames.add(teamName);
+        const abbreviation = teamName.split(' ').map(w => w[0]).join('').substring(0, 5).toUpperCase();
         
         // AI 팀 생성
         const result = await conn.query(
@@ -50,6 +85,27 @@ class LeagueService {
         );
         
         const aiTeamId = result.insertId;
+        
+        // AI 팀 기본 시설 생성
+        try {
+          // 경기장 생성 (레벨 1)
+          await conn.query(
+            `INSERT INTO stadiums (team_id, level, name, max_capacity, monthly_maintenance_cost)
+             VALUES (?, 1, '기본 아레나', 100, 1000000)`,
+            [aiTeamId]
+          );
+          
+          // 숙소 생성 (레벨 1)
+          const conditionBonus = 10 + Math.floor(Math.random() * 21); // 10~30
+          const growthBonus = Math.floor(conditionBonus / 2);
+          await conn.query(
+            `INSERT INTO dormitories (team_id, level, condition_bonus, growth_bonus, monthly_maintenance_cost)
+             VALUES (?, 1, ?, ?, 500000)`,
+            [aiTeamId, conditionBonus, growthBonus]
+          );
+        } catch (facilityError) {
+          console.error(`AI 팀 ${aiTeamId} 시설 생성 오류:`, facilityError);
+        }
         
         // AI 팀에 선수 배정 (포지션별 2명씩)
         const positions = ['TOP', 'JGL', 'MID', 'ADC', 'SPT'];
