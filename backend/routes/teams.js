@@ -154,8 +154,14 @@ router.post('/', upload.single('logo'), async (req, res) => {
       [teamId]
     );
     
+    // BigInt를 문자열로 변환
+    const teamResponse = {
+      ...newTeam,
+      money: newTeam.money ? newTeam.money.toString() : '0'
+    };
+    
     conn.release();
-    res.status(201).json(newTeam);
+    res.status(201).json(teamResponse);
   } catch (error) {
     console.error('팀 생성 오류:', error);
     if (conn) conn.release();
@@ -249,93 +255,6 @@ router.delete('/:teamId/logo', async (req, res) => {
 
     conn.release();
     res.json({ success: true, message: '로고가 삭제되었습니다.' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 팀 생성
-router.post('/', async (req, res) => {
-  try {
-    const { userId, regionId, name } = req.body;
-    const conn = await pool.getConnection();
-
-    // 사용자 확인
-    const users = await conn.query(
-      'SELECT id FROM users WHERE id = ?',
-      [userId]
-    );
-
-    if (users.length === 0) {
-      conn.release();
-      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
-    }
-
-    // 지역 확인
-    const regions = await conn.query(
-      'SELECT id FROM regions WHERE id = ?',
-      [regionId]
-    );
-
-    if (regions.length === 0) {
-      conn.release();
-      return res.status(404).json({ error: '지역을 찾을 수 없습니다.' });
-    }
-
-    // 1부 리그 찾기
-    const league = await conn.query(
-      'SELECT id, current_teams, max_teams FROM leagues WHERE region_id = ? AND division = 1',
-      [regionId]
-    );
-
-    let leagueId = null;
-    if (league.length > 0) {
-      // 1부가 꽉 찼는지 확인
-      if (league[0].current_teams < league[0].max_teams) {
-        leagueId = league[0].id;
-        // 현재 팀 수 증가
-        await conn.query(
-          'UPDATE leagues SET current_teams = current_teams + 1 WHERE id = ?',
-          [leagueId]
-        );
-      } else {
-        // 2부 리그로 배정
-        const league2 = await conn.query(
-          'SELECT id FROM leagues WHERE region_id = ? AND division = 2',
-          [regionId]
-        );
-        if (league2.length > 0) {
-          leagueId = league2[0].id;
-          await conn.query(
-            'UPDATE leagues SET current_teams = current_teams + 1 WHERE id = ?',
-            [leagueId]
-          );
-        }
-      }
-    }
-
-    // 팀 생성
-    const result = await conn.query(
-      `INSERT INTO teams (user_id, region_id, league_id, name)
-       VALUES (?, ?, ?, ?)`,
-      [userId, regionId, leagueId, name]
-    );
-
-    // 기본 시설 생성
-    await conn.query(
-      `INSERT INTO stadiums (team_id, level, name, max_capacity, current_capacity, monthly_maintenance_cost)
-       VALUES (?, 1, '기본 아레나', 100, 100, 500000)`,
-      [result.insertId]
-    );
-
-    await conn.query(
-      `INSERT INTO dormitories (team_id, level, condition_bonus, growth_bonus, monthly_maintenance_cost)
-       VALUES (?, 1, 0, 0, 300000)`,
-      [result.insertId]
-    );
-
-    conn.release();
-    res.json({ success: true, teamId: result.insertId });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
