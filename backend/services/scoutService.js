@@ -32,20 +32,28 @@ class ScoutService {
       conn = await pool.getConnection();
       
       // 스카우트 정보 조회
-      const [scouts] = await conn.query('SELECT * FROM scouts WHERE id = ?', [scoutId]);
+      const scoutRows = await conn.query('SELECT * FROM scouts WHERE id = ?', [scoutId]);
+      const scouts = Array.isArray(scoutRows) && scoutRows.length > 0 ? scoutRows : [];
+      
       if (!scouts || scouts.length === 0) {
         throw new Error('스카우트를 찾을 수 없습니다.');
       }
       
       const scout = scouts[0];
+      if (!scout || !scout.team_id) {
+        throw new Error('스카우트 정보가 올바르지 않습니다.');
+      }
       
       // 팀 자금 확인
-      const [team] = await conn.query('SELECT money FROM teams WHERE id = ?', [scout.team_id]);
-      if (!team || team.length === 0) {
+      const teamRows = await conn.query('SELECT money FROM teams WHERE id = ?', [scout.team_id]);
+      const teams = Array.isArray(teamRows) && teamRows.length > 0 ? teamRows : [];
+      
+      if (!teams || teams.length === 0) {
         throw new Error('팀을 찾을 수 없습니다.');
       }
       
-      if (Number(team[0].money) < Number(scout.cost_per_scout)) {
+      const team = teams[0];
+      if (Number(team.money) < Number(scout.cost_per_scout)) {
         throw new Error('자금이 부족합니다.');
       }
       
@@ -82,7 +90,8 @@ class ScoutService {
       
       query += ' ORDER BY RAND() LIMIT 1';
       
-      const [players] = await conn.query(query, params);
+      const playerRows = await conn.query(query, params);
+      const players = Array.isArray(playerRows) && playerRows.length > 0 ? playerRows : [];
       
       if (!players || players.length === 0) {
         return {
@@ -93,6 +102,13 @@ class ScoutService {
       }
       
       const player = players[0];
+      if (!player) {
+        return {
+          success: false,
+          message: '발견할 수 있는 선수가 없습니다.',
+          cost: scout.cost_per_scout
+        };
+      }
       
       // 스카우트 결과 저장
       await conn.query(
