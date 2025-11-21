@@ -29,13 +29,38 @@ router.get('/team/:teamId', async (req, res) => {
 });
 
 // 오늘의 경기 조회
-router.get('/today', async (req, res) => {
+router.get('/today/:teamId', async (req, res) => {
+  let conn;
   try {
-    const matches = await MatchService.getTodayMatches();
+    const { teamId } = req.params;
+    conn = await pool.getConnection();
+    
+    // 게임 시간 조회
+    const [gameTime] = await conn.query('SELECT * FROM game_time WHERE id = 1');
+    const currentDate = gameTime.current_date || new Date();
+    const dateStr = typeof currentDate === 'string' ? currentDate.split('T')[0] : currentDate.toISOString().split('T')[0];
+    
+    // 오늘 예정된 경기 조회
+    const matches = await conn.query(
+      `SELECT m.*, 
+       ht.name as home_team_name, ht.logo_path as home_team_logo,
+       at.name as away_team_name, at.logo_path as away_team_logo
+       FROM matches m
+       JOIN teams ht ON m.home_team_id = ht.id
+       JOIN teams at ON m.away_team_id = at.id
+       WHERE DATE(m.match_date) = ? 
+       AND (m.home_team_id = ? OR m.away_team_id = ?)
+       AND m.status = 'scheduled'
+       ORDER BY m.match_date ASC`,
+      [dateStr, teamId, teamId]
+    );
+    
     res.json(matches);
   } catch (error) {
     console.error('오늘의 경기 조회 오류:', error);
     res.status(500).json({ error: '경기 조회 실패' });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
@@ -146,35 +171,73 @@ router.get('/league/:leagueId/standings', async (req, res) => {
     const [gameTime] = await conn.query('SELECT `current_year` FROM game_time WHERE id = 1');
     const seasonYear = gameTime.current_year || 2024;
     
-    // goals_for 컬럼이 있는지 확인
-    let standings;
+    // 리그에 소속된 모든 팀 조회
+    const allTeams = await conn.query(
+      `SELECT id, name, logo_path, is_ai FROM teams WHERE league_id = ?`,
+      [leagueId]
+    );
+    
+    // 순위 데이터 조회
+    let standingsData = [];
     try {
-      standings = await conn.query(
-        `SELECT ls.*, t.name as team_name, t.logo_path as team_logo
+      standingsData = await conn.query(
+        `SELECT ls.*, t.name as team_name, t.logo_path as team_logo, t.is_ai
          FROM league_standings ls
          JOIN teams t ON ls.team_id = t.id
-         WHERE ls.league_id = ? AND ls.season_year = ?
-         ORDER BY ls.points DESC, ls.goal_difference DESC, COALESCE(ls.goals_for, 0) DESC`,
+         WHERE ls.league_id = ? AND ls.season_year = ?`,
         [leagueId, seasonYear]
       );
     } catch (error) {
-      // goals_for 컬럼이 없으면 기본 정렬만 사용
-      if (error.code === 'ER_BAD_FIELD_ERROR') {
-        standings = await conn.query(
-          `SELECT ls.*, t.name as team_name, t.logo_path as team_logo
-           FROM league_standings ls
-           JOIN teams t ON ls.team_id = t.id
-           WHERE ls.league_id = ? AND ls.season_year = ?
-           ORDER BY ls.points DESC, ls.goal_difference DESC`,
-          [leagueId, seasonYear]
-        );
-      } else {
-        throw error;
-      }
+      console.log('순위 데이터 조회 오류 (계속 진행):', error);
     }
     
+    // 순위 데이터가 없는 팀들을 초기화
+    const standingsMap = new Map();
+    standingsData.forEach(standing => {
+      standingsMap.set(standing.team_id, standing);
+    });
+    
+    // 모든 팀에 대해 순위 데이터 생성 (없으면 초기값)
+    const allStandings = allTeams.map(team => {
+      const existing = standingsMap.get(team.id);
+      if (existing) {
+        return {
+          ...existing,
+          team_name: team.name,
+          team_logo: team.logo_path,
+          is_ai: team.is_ai
+        };
+      } else {
+        // 순위 데이터가 없으면 초기값으로 생성
+        return {
+          id: null,
+          league_id: parseInt(leagueId),
+          team_id: team.id,
+          season_year: seasonYear,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          points: 0,
+          goal_difference: 0,
+          goals_for: 0,
+          goals_against: 0,
+          rank: 0,
+          team_name: team.name,
+          team_logo: team.logo_path,
+          is_ai: team.is_ai
+        };
+      }
+    });
+    
+    // 정렬 (points DESC, goal_difference DESC, goals_for DESC)
+    allStandings.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.goal_difference !== a.goal_difference) return b.goal_difference - a.goal_difference;
+      return (b.goals_for || 0) - (a.goals_for || 0);
+    });
+    
     // 순위 추가
-    const standingsWithRank = standings.map((standing, index) => ({
+    const standingsWithRank = allStandings.map((standing, index) => ({
       ...standing,
       rank: index + 1
     }));

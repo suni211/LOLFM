@@ -3,16 +3,29 @@ import { io } from 'socket.io-client';
 // Socket.IO 서버 URL (환경 변수 또는 기본값)
 // API URL에서 /api를 제거한 기본 URL 사용
 const getSocketURL = () => {
+  // 프로덕션 환경에서는 https://berrple.com 사용
+  if (window.location.hostname === 'berrple.com' || window.location.hostname === 'www.berrple.com') {
+    return 'https://berrple.com';
+  }
+  
+  // 환경 변수 확인
   if (process.env.REACT_APP_SOCKET_URL) {
-    return process.env.REACT_APP_SOCKET_URL;
+    const url = process.env.REACT_APP_SOCKET_URL;
+    // 포트 번호 제거 (Nginx를 통해 연결)
+    return url.replace(/:3000|:5000/g, '');
   }
+  
   if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL.replace('/api', '');
+    const url = process.env.REACT_APP_API_URL.replace('/api', '');
+    // 포트 번호 제거
+    return url.replace(/:3000|:5000/g, '');
   }
+  
   return 'http://localhost:5000';
 };
 
 const SOCKET_URL = getSocketURL();
+console.log('🔌 Socket.IO 연결 URL:', SOCKET_URL);
 
 class SocketService {
   constructor() {
@@ -27,13 +40,28 @@ class SocketService {
       return;
     }
 
-    this.socket = io(SOCKET_URL, {
+    // URL에서 포트 제거 (프로덕션에서는 Nginx를 통해 연결)
+    let socketUrl = SOCKET_URL;
+    if (socketUrl.includes(':3000') || socketUrl.includes(':5000')) {
+      socketUrl = socketUrl.replace(/:3000|:5000/g, '');
+    }
+    
+    // 프로토콜 확인
+    if (window.location.protocol === 'https:' && socketUrl.startsWith('http://')) {
+      socketUrl = socketUrl.replace('http://', 'https://');
+    }
+    
+    console.log('🔌 Socket.IO 연결 시도:', socketUrl);
+    
+    this.socket = io(socketUrl, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
       path: '/socket.io',
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      autoConnect: true,
+      forceNew: false
     });
 
     this.socket.on('connect', () => {

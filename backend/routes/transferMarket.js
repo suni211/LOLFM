@@ -41,6 +41,34 @@ router.post('/sell', async (req, res) => {
   }
 });
 
+// 선수 판매 등록 (list 엔드포인트)
+router.post('/list', async (req, res) => {
+  try {
+    const { playerId, price } = req.body;
+    const conn = await pool.getConnection();
+    
+    // 선수 정보 조회
+    const [player] = await conn.query('SELECT team_id FROM players WHERE id = ?', [playerId]);
+    if (!player || !player.team_id) {
+      conn.release();
+      return res.status(404).json({ error: '선수를 찾을 수 없습니다.' });
+    }
+    
+    const result = await conn.query(
+      `INSERT INTO transfer_market (player_id, seller_team_id, asking_price, status)
+       VALUES (?, ?, ?, 'OPEN')
+       ON DUPLICATE KEY UPDATE asking_price = ?, status = 'OPEN'`,
+      [playerId, player.team_id, price, price]
+    );
+    
+    conn.release();
+    res.json({ success: true, marketId: result.insertId });
+  } catch (error) {
+    console.error('선수 판매 등록 오류:', error);
+    res.status(500).json({ error: error.message || '판매 등록 실패' });
+  }
+});
+
 // 거래 제안
 router.post('/:marketId/offer', async (req, res) => {
   try {

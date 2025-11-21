@@ -118,14 +118,14 @@ function Navigation({ user, onLogout, team }) {
               <span className="stat-icon">🏟️</span>
               <div className="stat-content">
                 <span className="stat-label">경기장</span>
-                <span className="stat-value">Lv.1</span>
+                <span className="stat-value">Lv.{team.stadium_level || 1}</span>
               </div>
             </div>
             <div className="stat-item">
               <span className="stat-icon">🏠</span>
               <div className="stat-content">
                 <span className="stat-label">숙소</span>
-                <span className="stat-value">Lv.1</span>
+                <span className="stat-value">Lv.{team.dormitory_level || 1}</span>
               </div>
             </div>
           </div>

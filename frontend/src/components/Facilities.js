@@ -81,9 +81,22 @@ function Facilities({ team }) {
   };
 
   const renderFacility = (type, data) => {
-    if (!data) return null;
+    // 시설이 없으면 기본값 사용
+    const facilityData = data || {
+      level: 0,
+      max_level: type === 'dormitory' ? 20 : 10,
+      upgrade_cost: type === 'stadium' ? 10000000 : type === 'dormitory' ? 100000000 : 50000000,
+      upgrade_time: type === 'stadium' ? '10분' : type === 'dormitory' ? '1일' : '1일',
+      maintenance_cost: 0,
+      effect: type === 'stadium' ? '최대 관중: 0명' : 
+              type === 'dormitory' ? '컨디션 +0, 성장 +0' :
+              type === 'training' ? '훈련 효과 +0%' :
+              type === 'medical' ? '회복 +0%, 부상 예방 +0%' :
+              '인지도 +0, 팬 증가 +0%',
+      name: type === 'stadium' ? '기본 아레나' : ''
+    };
 
-    const canUpgrade = team.money >= data.upgrade_cost && data.level < data.max_level;
+    const canUpgrade = team.money >= facilityData.upgrade_cost && facilityData.level < facilityData.max_level;
 
     return (
       <div className="facility-card">
@@ -91,34 +104,36 @@ function Facilities({ team }) {
           <span className="facility-icon">{getFacilityIcon(type)}</span>
           <div className="facility-info">
             <h3 className="facility-name">{getFacilityName(type)}</h3>
-            <div className="facility-level">Lv.{data.level} / {data.max_level}</div>
+            <div className="facility-level">Lv.{facilityData.level} / {facilityData.max_level}</div>
           </div>
         </div>
 
         <div className="facility-stats">
           <div className="stat-row">
             <span>효과</span>
-            <span className="value">{data.effect}</span>
+            <span className="value">{facilityData.effect}</span>
           </div>
-          <div className="stat-row">
-            <span>월 유지비</span>
-            <span className="value expense">-{formatMoney(data.maintenance_cost)}</span>
-          </div>
-          {data.level < data.max_level && (
+          {facilityData.level > 0 && (
+            <div className="stat-row">
+              <span>월 유지비</span>
+              <span className="value expense">-{formatMoney(facilityData.maintenance_cost)}</span>
+            </div>
+          )}
+          {facilityData.level < facilityData.max_level && (
             <>
               <div className="stat-row">
                 <span>업그레이드 비용</span>
-                <span className="value">{formatMoney(data.upgrade_cost)}</span>
+                <span className="value">{formatMoney(facilityData.upgrade_cost)}</span>
               </div>
               <div className="stat-row">
                 <span>소요 시간</span>
-                <span className="value">{data.upgrade_time}</span>
+                <span className="value">{facilityData.upgrade_time}</span>
               </div>
             </>
           )}
         </div>
 
-        {data.level < data.max_level ? (
+        {facilityData.level < facilityData.max_level ? (
           <button
             className={`upgrade-btn ${!canUpgrade ? 'disabled' : ''}`}
             onClick={() => handleUpgrade(type)}

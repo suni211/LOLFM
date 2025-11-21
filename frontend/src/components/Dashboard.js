@@ -19,43 +19,70 @@ function Dashboard({ user, team }) {
   }, [team]);
 
   const loadData = async () => {
+    if (!team || !team.id) return;
+    
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const token = authService.getTokenValue();
 
+      if (!token) {
+        console.log('토큰이 없습니다.');
+        return;
+      }
+
       // 재정 정보 조회
-      const financeResponse = await axios.get(`${API_URL}/financial/maintenance/${team.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setFinances(financeResponse.data);
-
-      // 알림 조회
-      const notificationResponse = await axios.get(`${API_URL}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotifications(notificationResponse.data.slice(0, 5));
-
-      // 게임 시간 조회
-      const timeResponse = await axios.get(`${API_URL}/game-time`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setGameTime(timeResponse.data);
-
-      // 선수 목록 조회
-      const playersResponse = await axios.get(`${API_URL}/players/team/${team.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setPlayers(playersResponse.data);
-
-      // 오늘의 경기 조회
       try {
-        const matchesResponse = await axios.get(`${API_URL}/matches/today`, {
+        const financeResponse = await axios.get(`${API_URL}/financial/maintenance/${team.id}`, {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
-        setTodayMatches(matchesResponse.data);
+        setFinances(financeResponse.data);
       } catch (error) {
-        console.log('오늘의 경기 없음');
+        console.log('재정 정보 로드 실패:', error.response?.status);
+      }
+
+      // 알림 조회
+      try {
+        const notificationResponse = await axios.get(`${API_URL}/notifications`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        setNotifications(notificationResponse.data?.slice(0, 5) || []);
+      } catch (error) {
+        console.log('알림 조회 실패:', error.response?.status);
+      }
+
+      // 게임 시간 조회
+      try {
+        const timeResponse = await axios.get(`${API_URL}/game-time`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        setGameTime(timeResponse.data);
+      } catch (error) {
+        console.log('게임 시간 조회 실패:', error.response?.status);
+      }
+
+      // 선수 목록 조회
+      try {
+        const playersResponse = await axios.get(`${API_URL}/players/team/${team.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        setPlayers(playersResponse.data || []);
+      } catch (error) {
+        console.log('선수 목록 조회 실패:', error.response?.status);
+      }
+
+      // 오늘의 경기 조회
+      try {
+        const matchesResponse = await axios.get(`${API_URL}/matches/today/${team.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        setTodayMatches(matchesResponse.data || []);
+      } catch (error) {
+        console.log('오늘의 경기 없음:', error.response?.status);
       }
     } catch (error) {
       console.error('데이터 로드 오류:', error);
