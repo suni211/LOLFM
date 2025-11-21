@@ -554,26 +554,26 @@ CREATE TABLE IF NOT EXISTS match_tactics (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 초기 지역 데이터 삽입
-INSERT INTO regions (code, name, full_name) VALUES
+INSERT IGNORE INTO regions (code, name, full_name) VALUES
 ('ASL', 'ASIA', 'ASL SUPER LEAGUE'),
 ('AMEL', 'AMERICA', 'AMEL LIGA'),
 ('EL', 'EUROPE', 'ELL'),
-('AL', 'AFRICA', 'ALO')
-ON DUPLICATE KEY UPDATE name=name;
+('AL', 'AFRICA', 'ALO');
 
 -- 각 지역의 1부, 2부 리그 생성 (1부 8팀, 2부 10팀)
-INSERT INTO leagues (region_id, division, name, max_teams) 
+INSERT IGNORE INTO leagues (region_id, division, name, max_teams) 
 SELECT r.id, 1, CONCAT(r.full_name, ' 1부'), 8
-FROM regions r
-ON DUPLICATE KEY UPDATE max_teams=8, name=name;
+FROM regions r;
 
-INSERT INTO leagues (region_id, division, name, max_teams) 
+UPDATE leagues SET max_teams=8 WHERE division=1;
+
+INSERT IGNORE INTO leagues (region_id, division, name, max_teams) 
 SELECT r.id, 2, CONCAT(r.full_name, ' 2부'), 10
-FROM regions r
-ON DUPLICATE KEY UPDATE max_teams=10, name=name;
+FROM regions r;
+
+UPDATE leagues SET max_teams=10 WHERE division=2;
 
 -- 초기 게임 시간 설정 (1월 1일)
-INSERT INTO game_time (`current_date`, `current_month`, `current_year`, is_stove_league) 
-VALUES ('2024-01-01', 1, 2024, FALSE)
-ON DUPLICATE KEY UPDATE `current_date`=`current_date`;
+INSERT IGNORE INTO game_time (`current_date`, `current_month`, `current_year`, is_stove_league) 
+VALUES ('2024-01-01', 1, 2024, FALSE);
 
