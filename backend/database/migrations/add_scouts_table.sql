@@ -1,4 +1,4 @@
--- 스카우트 테이블 생성
+-- 스카우트 테이블 생성 (이미 존재하면 무시)
 CREATE TABLE IF NOT EXISTS scouts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   team_id INT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS scouts (
   INDEX idx_level (level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 스카우트 결과 테이블
+-- 스카우트 결과 테이블 (이미 존재하면 무시)
 CREATE TABLE IF NOT EXISTS scout_results (
   id INT AUTO_INCREMENT PRIMARY KEY,
   scout_id INT NOT NULL,
