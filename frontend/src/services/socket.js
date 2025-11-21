@@ -42,16 +42,34 @@ class SocketService {
 
     // URL에서 포트 제거 (프로덕션에서는 Nginx를 통해 연결)
     let socketUrl = SOCKET_URL;
-    if (socketUrl.includes(':3000') || socketUrl.includes(':5000')) {
-      socketUrl = socketUrl.replace(/:3000|:5000/g, '');
+    
+    // 프로덕션 환경 강제 설정
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'berrple.com' || hostname === 'www.berrple.com') {
+        socketUrl = 'https://berrple.com';
+      } else if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+        socketUrl = 'http://localhost:5000';
+      }
     }
     
-    // 프로토콜 확인
-    if (window.location.protocol === 'https:' && socketUrl.startsWith('http://')) {
-      socketUrl = socketUrl.replace('http://', 'https://');
+    // 포트 번호 강제 제거
+    socketUrl = socketUrl.replace(/:3000|:5000/g, '');
+    
+    // 프로토콜 확인 및 수정
+    if (typeof window !== 'undefined') {
+      if (window.location.protocol === 'https:' && socketUrl.startsWith('http://')) {
+        socketUrl = socketUrl.replace('http://', 'https://');
+      }
     }
     
     console.log('🔌 Socket.IO 연결 시도:', socketUrl);
+    
+    // 기존 연결이 있으면 먼저 끊기
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
     
     this.socket = io(socketUrl, {
       withCredentials: true,
@@ -61,7 +79,9 @@ class SocketService {
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
       autoConnect: true,
-      forceNew: false
+      forceNew: true, // 강제로 새 연결 생성
+      upgrade: true,
+      rememberUpgrade: false
     });
 
     this.socket.on('connect', () => {

@@ -41,15 +41,21 @@ function Dashboard({ user, team }) {
         console.log('재정 정보 로드 실패:', error.response?.status);
       }
 
-      // 알림 조회
+      // 알림 조회 (선택적 - 실패해도 계속 진행)
       try {
         const notificationResponse = await axios.get(`${API_URL}/notifications`, {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true
         });
-        setNotifications(notificationResponse.data?.slice(0, 5) || []);
+        if (notificationResponse.data) {
+          setNotifications(notificationResponse.data.slice(0, 5));
+        }
       } catch (error) {
-        console.log('알림 조회 실패:', error.response?.status);
+        // 401 오류는 무시 (인증 문제일 수 있음)
+        if (error.response?.status !== 401) {
+          console.log('알림 조회 실패:', error.response?.status);
+        }
+        setNotifications([]);
       }
 
       // 게임 시간 조회
