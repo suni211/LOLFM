@@ -49,7 +49,7 @@ class GameTimeService {
       const newDate = new Date(newYear, newMonth - 1, 1);
       await conn.query(
         `UPDATE game_time 
-         SET current_date = ?, current_month = ?, current_year = ?, is_stove_league = ?
+         SET \`current_date\` = ?, \`current_month\` = ?, \`current_year\` = ?, is_stove_league = ?
          WHERE id = 1`,
         [newDate, newMonth, newYear, isStoveLeague]
       );

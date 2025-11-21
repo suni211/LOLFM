@@ -43,7 +43,7 @@ router.get('/league/:leagueId/standings', async (req, res) => {
   try {
     const { leagueId } = req.params;
     const conn = await pool.getConnection();
-    const gameTime = await conn.query('SELECT current_year FROM game_time WHERE id = 1');
+    const gameTime = await conn.query('SELECT `current_year` FROM game_time WHERE id = 1');
     const seasonYear = gameTime[0]?.current_year || 2024;
     
     const standings = await conn.query(

@@ -155,7 +155,7 @@ class MatchService {
   static async updateStandings(leagueId, homeTeamId, awayTeamId, result) {
     const conn = await pool.getConnection();
     try {
-      const gameTime = await conn.query('SELECT current_year FROM game_time WHERE id = 1');
+      const gameTime = await conn.query('SELECT `current_year` FROM game_time WHERE id = 1');
       const seasonYear = gameTime[0]?.current_year || 2024;
 
       // 홈팀 순위
@@ -275,7 +275,7 @@ class MatchService {
   static async recordPlayerStats(players, matchId, isWin) {
     const conn = await pool.getConnection();
     try {
-      const gameTime = await conn.query('SELECT current_year FROM game_time WHERE id = 1');
+      const gameTime = await conn.query('SELECT `current_year` FROM game_time WHERE id = 1');
       const seasonYear = gameTime[0]?.current_year || 2024;
 
       for (const player of players) {

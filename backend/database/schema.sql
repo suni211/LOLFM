@@ -89,6 +89,9 @@ CREATE TABLE IF NOT EXISTS players (
   contract_end DATE,
   is_ai BOOLEAN DEFAULT TRUE, -- AI 선수 여부
   is_custom BOOLEAN DEFAULT FALSE, -- 커스텀 선수 여부
+  age INT DEFAULT 18, -- 나이
+  retirement_date DATE, -- 은퇴 예정일
+  stat_decline_rate DECIMAL(5,2) DEFAULT 0, -- 스탯 감소율
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,
@@ -205,9 +208,9 @@ CREATE TABLE IF NOT EXISTS negotiations (
 -- 게임 시간 테이블
 CREATE TABLE IF NOT EXISTS game_time (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  current_date DATE NOT NULL,
-  current_month INT NOT NULL,
-  current_year INT NOT NULL,
+  `current_date` DATE NOT NULL,
+  `current_month` INT NOT NULL,
+  `current_year` INT NOT NULL,
   is_stove_league BOOLEAN DEFAULT FALSE, -- 스토브리그 여부
   last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY unique_game_time (id)
@@ -320,11 +323,7 @@ CREATE TABLE IF NOT EXISTS player_injuries (
   INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 선수 나이 및 은퇴 정보 추가
-ALTER TABLE players 
-ADD COLUMN IF NOT EXISTS age INT DEFAULT 18,
-ADD COLUMN IF NOT EXISTS retirement_date DATE,
-ADD COLUMN IF NOT EXISTS stat_decline_rate DECIMAL(5,2) DEFAULT 0; -- 스탯 감소율
+-- 선수 나이 및 은퇴 정보는 players 테이블 생성 시 포함됨
 
 -- 에이전트 테이블
 CREATE TABLE IF NOT EXISTS agents (
@@ -351,10 +350,10 @@ CREATE TABLE IF NOT EXISTS player_satisfaction (
   INDEX idx_player (player_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 협상에 에이전트 추가
-ALTER TABLE negotiations
-ADD COLUMN IF NOT EXISTS agent_id INT,
-ADD FOREIGN KEY IF NOT EXISTS fk_agent (agent_id) REFERENCES agents(id) ON DELETE SET NULL;
+-- 협상에 에이전트 추가 (별도 마이그레이션으로 처리)
+-- ALTER TABLE negotiations
+-- ADD COLUMN agent_id INT,
+-- ADD FOREIGN KEY fk_agent (agent_id) REFERENCES agents(id) ON DELETE SET NULL;
 
 -- 리그 순위 테이블
 CREATE TABLE IF NOT EXISTS league_standings (
@@ -574,7 +573,7 @@ FROM regions r
 ON DUPLICATE KEY UPDATE max_teams=10, name=name;
 
 -- 초기 게임 시간 설정 (1월 1일)
-INSERT INTO game_time (current_date, current_month, current_year, is_stove_league) 
+INSERT INTO game_time (`current_date`, `current_month`, `current_year`, is_stove_league) 
 VALUES ('2024-01-01', 1, 2024, FALSE)
-ON DUPLICATE KEY UPDATE current_date=current_date;
+ON DUPLICATE KEY UPDATE `current_date`=`current_date`;
 
