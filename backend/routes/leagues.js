@@ -15,17 +15,21 @@ router.get('/region/:regionId', async (req, res) => {
       [regionId]
     );
     
-    // 각 리그의 현재 팀 수 조회
+    // 각 리그의 현재 팀 수 조회 및 BigInt 변환
+    const leaguesResponse = [];
     for (let league of leagues) {
       const teamCount = await conn.query(
         'SELECT COUNT(*) as count FROM teams WHERE league_id = ?',
         [league.id]
       );
-      league.current_teams = teamCount[0]?.count || 0;
+      
+      const leagueData = convertBigInt(league);
+      leagueData.current_teams = teamCount[0]?.count || 0;
+      leaguesResponse.push(leagueData);
     }
     
-    console.log('리그 조회 결과:', leagues);
-    res.json(leagues);
+    console.log('리그 조회 결과:', leaguesResponse);
+    res.json(leaguesResponse);
   } catch (error) {
     console.error('리그 조회 오류:', error);
     res.status(500).json({ error: '리그 조회 실패', details: error.message });
@@ -33,6 +37,19 @@ router.get('/region/:regionId', async (req, res) => {
     if (conn) conn.release();
   }
 });
+
+// BigInt를 문자열로 변환하는 헬퍼 함수
+function convertBigInt(obj) {
+  const result = {};
+  for (let key in obj) {
+    if (typeof obj[key] === 'bigint') {
+      result[key] = obj[key].toString();
+    } else {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
 
 // 특정 리그 정보 조회
 router.get('/:leagueId', async (req, res) => {
@@ -50,7 +67,7 @@ router.get('/:leagueId', async (req, res) => {
       return res.status(404).json({ error: '리그를 찾을 수 없습니다' });
     }
     
-    res.json(league);
+    res.json(convertBigInt(league));
   } catch (error) {
     console.error('리그 조회 오류:', error);
     res.status(500).json({ error: '리그 조회 실패' });

@@ -5,6 +5,19 @@ const pool = require('../database/pool');
 const path = require('path');
 const fs = require('fs');
 
+// BigInt를 문자열로 변환하는 헬퍼 함수
+function convertBigInt(obj) {
+  const result = {};
+  for (let key in obj) {
+    if (typeof obj[key] === 'bigint') {
+      result[key] = obj[key].toString();
+    } else {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
+
 // 팀 정보 조회
 router.get('/:teamId', async (req, res) => {
   try {
@@ -20,7 +33,7 @@ router.get('/:teamId', async (req, res) => {
       return res.status(404).json({ error: '팀을 찾을 수 없습니다.' });
     }
     
-    res.json(teams[0]);
+    res.json(convertBigInt(teams[0]));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -41,7 +54,7 @@ router.get('/user/:userId', async (req, res) => {
       return res.status(404).json({ error: '팀을 찾을 수 없습니다.' });
     }
     
-    res.json(teams[0]);
+    res.json(convertBigInt(teams[0]));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -154,14 +167,8 @@ router.post('/', upload.single('logo'), async (req, res) => {
       [teamId]
     );
     
-    // BigInt를 문자열로 변환
-    const teamResponse = {
-      ...newTeam,
-      money: newTeam.money ? newTeam.money.toString() : '0'
-    };
-    
     conn.release();
-    res.status(201).json(teamResponse);
+    res.status(201).json(convertBigInt(newTeam));
   } catch (error) {
     console.error('팀 생성 오류:', error);
     if (conn) conn.release();
