@@ -47,6 +47,51 @@ async function createDefaultFacilities() {
         );
         console.log(`팀 ${teamId}: 숙소 생성 완료`);
       }
+      
+      // 훈련장 확인
+      const [training] = await conn.query(
+        'SELECT id FROM training_facilities WHERE team_id = ?',
+        [teamId]
+      );
+      
+      if (!training || training.length === 0) {
+        await conn.query(
+          `INSERT INTO training_facilities (team_id, level, growth_bonus, monthly_maintenance_cost)
+           VALUES (?, 1, 5.0, 1000000)`,
+          [teamId]
+        );
+        console.log(`팀 ${teamId}: 훈련장 생성 완료`);
+      }
+      
+      // 의료실 확인
+      const [medical] = await conn.query(
+        'SELECT id FROM medical_rooms WHERE team_id = ?',
+        [teamId]
+      );
+      
+      if (!medical || medical.length === 0) {
+        await conn.query(
+          `INSERT INTO medical_rooms (team_id, level, recovery_speed_bonus, condition_recovery_bonus, monthly_maintenance_cost)
+           VALUES (?, 1, 3.0, 1.0, 1000000)`,
+          [teamId]
+        );
+        console.log(`팀 ${teamId}: 의료실 생성 완료`);
+      }
+      
+      // 미디어실 확인
+      const [media] = await conn.query(
+        'SELECT id FROM media_rooms WHERE team_id = ?',
+        [teamId]
+      );
+      
+      if (!media || media.length === 0) {
+        await conn.query(
+          `INSERT INTO media_rooms (team_id, level, awareness_bonus, fan_growth_bonus, monthly_maintenance_cost)
+           VALUES (?, 1, 2.0, 1.0, 1000000)`,
+          [teamId]
+        );
+        console.log(`팀 ${teamId}: 미디어실 생성 완료`);
+      }
     }
     
     console.log('모든 팀의 기본 시설 생성 완료');

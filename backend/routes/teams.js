@@ -169,7 +169,7 @@ router.post('/', upload.single('logo'), async (req, res) => {
     
     console.log('팀 생성/대체 완료:', teamId);
     
-    // 기본 시설 생성 (경기장, 숙소)
+    // 기본 시설 생성 (경기장, 숙소, 훈련장, 의료실, 미디어실)
     try {
       // 경기장 생성 (레벨 1)
       await conn.query(
@@ -187,6 +187,30 @@ router.post('/', upload.single('logo'), async (req, res) => {
          VALUES (?, 1, ?, ?, 500000)
          ON DUPLICATE KEY UPDATE team_id = team_id`,
         [teamId, conditionBonus, growthBonus]
+      );
+      
+      // 훈련장 생성 (레벨 1) - 스키마에 growth_bonus 사용
+      await conn.query(
+        `INSERT INTO training_facilities (team_id, level, growth_bonus, monthly_maintenance_cost)
+         VALUES (?, 1, 5.0, 1000000)
+         ON DUPLICATE KEY UPDATE team_id = team_id`,
+        [teamId]
+      );
+      
+      // 의료실 생성 (레벨 1) - 스키마에 recovery_speed_bonus, condition_recovery_bonus 사용
+      await conn.query(
+        `INSERT INTO medical_rooms (team_id, level, recovery_speed_bonus, condition_recovery_bonus, monthly_maintenance_cost)
+         VALUES (?, 1, 3.0, 1.0, 1000000)
+         ON DUPLICATE KEY UPDATE team_id = team_id`,
+        [teamId]
+      );
+      
+      // 미디어실 생성 (레벨 1)
+      await conn.query(
+        `INSERT INTO media_rooms (team_id, level, awareness_bonus, fan_growth_bonus, monthly_maintenance_cost)
+         VALUES (?, 1, 2.0, 1.0, 1000000)
+         ON DUPLICATE KEY UPDATE team_id = team_id`,
+        [teamId]
       );
       
       console.log('기본 시설 생성 완료:', teamId);

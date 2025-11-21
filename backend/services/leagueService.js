@@ -103,6 +103,27 @@ class LeagueService {
              VALUES (?, 1, ?, ?, 500000)`,
             [aiTeamId, conditionBonus, growthBonus]
           );
+          
+          // 훈련장 생성 (레벨 1)
+          await conn.query(
+            `INSERT INTO training_facilities (team_id, level, growth_bonus, monthly_maintenance_cost)
+             VALUES (?, 1, 5.0, 1000000)`,
+            [aiTeamId]
+          );
+          
+          // 의료실 생성 (레벨 1)
+          await conn.query(
+            `INSERT INTO medical_rooms (team_id, level, recovery_speed_bonus, condition_recovery_bonus, monthly_maintenance_cost)
+             VALUES (?, 1, 3.0, 1.0, 1000000)`,
+            [aiTeamId]
+          );
+          
+          // 미디어실 생성 (레벨 1)
+          await conn.query(
+            `INSERT INTO media_rooms (team_id, level, awareness_bonus, fan_growth_bonus, monthly_maintenance_cost)
+             VALUES (?, 1, 2.0, 1.0, 1000000)`,
+            [aiTeamId]
+          );
         } catch (facilityError) {
           console.error(`AI 팀 ${aiTeamId} 시설 생성 오류:`, facilityError);
         }

@@ -73,11 +73,13 @@ router.post('/:playerId', async (req, res) => {
     );
     
     // 훈련 기록 저장
+    const now = new Date();
     await conn.query(
       `INSERT INTO player_trainings (
-        player_id, training_type, training_year, training_month, stat_increase
-      ) VALUES (?, ?, ?, ?, ?)`,
-      [playerId, trainingType, currentYear, currentMonth, increase]
+        player_id, training_type, training_year, training_month, stat_increase,
+        start_date, end_date, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED')`,
+      [playerId, trainingType, currentYear, currentMonth, increase, now, now]
     );
     
     // overall 재계산

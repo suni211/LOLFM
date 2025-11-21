@@ -65,21 +65,21 @@ router.get('/:teamId', async (req, res) => {
       training: training ? {
         level: training.level,
         max_level: 10,
-        training_bonus: training.training_bonus,
+        training_bonus: training.growth_bonus || 0, // 스키마는 growth_bonus지만 프론트엔드 호환을 위해 training_bonus로 매핑
         maintenance_cost: training.monthly_maintenance_cost,
         upgrade_cost: training.level * 50000000,
         upgrade_time: `${training.level}일`,
-        effect: `훈련 효과 +${training.training_bonus}%`
+        effect: `훈련 효과 +${training.growth_bonus || 0}%`
       } : null,
       medical: medical ? {
         level: medical.level,
         max_level: 10,
-        recovery_bonus: medical.recovery_bonus,
-        injury_prevention: medical.injury_prevention,
+        recovery_bonus: medical.recovery_speed_bonus || 0, // 스키마는 recovery_speed_bonus
+        injury_prevention: medical.condition_recovery_bonus || 0, // 스키마는 condition_recovery_bonus
         maintenance_cost: medical.monthly_maintenance_cost,
         upgrade_cost: medical.level * 50000000,
         upgrade_time: `${medical.level}일`,
-        effect: `회복 +${medical.recovery_bonus}%, 부상 예방 +${medical.injury_prevention}%`
+        effect: `회복 +${medical.recovery_speed_bonus || 0}%, 컨디션 회복 +${medical.condition_recovery_bonus || 0}%`
       } : null,
       media: media ? {
         level: media.level,
@@ -226,12 +226,25 @@ router.post('/:teamId/upgrade', async (req, res) => {
         let currentFacilityLevel = 0;
         if (!facility || facility.length === 0) {
           // 시설이 없으면 생성
-          await conn.query(
-            `INSERT INTO ${table} (team_id, level, ${facilityType === 'training' ? 'training_bonus' : 
-              facilityType === 'medical' ? 'recovery_bonus, injury_prevention' : 'awareness_bonus, fan_growth_bonus'}, monthly_maintenance_cost)
-             VALUES (?, 1, ${facilityType === 'training' ? '5' : facilityType === 'medical' ? '3, 1' : '2, 1'}, 1000000)`,
-            [teamId]
-          );
+          if (facilityType === 'training') {
+            await conn.query(
+              `INSERT INTO training_facilities (team_id, level, growth_bonus, monthly_maintenance_cost)
+               VALUES (?, 1, 5.0, 1000000)`,
+              [teamId]
+            );
+          } else if (facilityType === 'medical') {
+            await conn.query(
+              `INSERT INTO medical_rooms (team_id, level, recovery_speed_bonus, condition_recovery_bonus, monthly_maintenance_cost)
+               VALUES (?, 1, 3.0, 1.0, 1000000)`,
+              [teamId]
+            );
+          } else if (facilityType === 'media') {
+            await conn.query(
+              `INSERT INTO media_rooms (team_id, level, awareness_bonus, fan_growth_bonus, monthly_maintenance_cost)
+               VALUES (?, 1, 2.0, 1.0, 1000000)`,
+              [teamId]
+            );
+          }
           currentFacilityLevel = 1;
           upgradeCost = 50000000;
         } else {
@@ -245,19 +258,38 @@ router.post('/:teamId/upgrade', async (req, res) => {
         }
         
         const newFacilityLevel = currentFacilityLevel + 1;
-        const bonusColumn = facilityType === 'training' ? 'training_bonus' : 
-                          facilityType === 'medical' ? 'recovery_bonus' : 'awareness_bonus';
-        const bonusIncrease = facilityType === 'training' ? 5 : 
-                             facilityType === 'medical' ? 3 : 2;
         
-        await conn.query(
-          `UPDATE ${table}
-           SET level = ?,
-               ${bonusColumn} = ${bonusColumn} + ?,
-               monthly_maintenance_cost = monthly_maintenance_cost + 1000000
-           WHERE team_id = ?`,
-          [newFacilityLevel, bonusIncrease, teamId]
-        );
+        // 시설 타입별 업데이트
+        if (facilityType === 'training') {
+          await conn.query(
+            `UPDATE training_facilities
+             SET level = ?,
+                 growth_bonus = growth_bonus + 5.0,
+                 monthly_maintenance_cost = monthly_maintenance_cost + 1000000
+             WHERE team_id = ?`,
+            [newFacilityLevel, teamId]
+          );
+        } else if (facilityType === 'medical') {
+          await conn.query(
+            `UPDATE medical_rooms
+             SET level = ?,
+                 recovery_speed_bonus = recovery_speed_bonus + 3.0,
+                 condition_recovery_bonus = condition_recovery_bonus + 1.0,
+                 monthly_maintenance_cost = monthly_maintenance_cost + 1000000
+             WHERE team_id = ?`,
+            [newFacilityLevel, teamId]
+          );
+        } else if (facilityType === 'media') {
+          await conn.query(
+            `UPDATE media_rooms
+             SET level = ?,
+                 awareness_bonus = awareness_bonus + 2.0,
+                 fan_growth_bonus = fan_growth_bonus + 1.0,
+                 monthly_maintenance_cost = monthly_maintenance_cost + 1000000
+             WHERE team_id = ?`,
+            [newFacilityLevel, teamId]
+          );
+        }
         
         // 팀 자금 차감
         await conn.query(
