@@ -16,6 +16,7 @@ function TeamCreation({ user, onTeamCreated }) {
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadRegions();
@@ -191,6 +192,8 @@ function TeamCreation({ user, onTeamCreated }) {
       </div>
 
       <form className="team-form" onSubmit={handleSubmit}>
+        {error && <div className="error-message">{error}</div>}
+        
         <div className="form-section">
           <label className="form-label">
             <span className="label-icon">🏢</span>
