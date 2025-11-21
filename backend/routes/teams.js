@@ -169,6 +169,32 @@ router.post('/', upload.single('logo'), async (req, res) => {
     
     console.log('팀 생성/대체 완료:', teamId);
     
+    // 기본 시설 생성 (경기장, 숙소)
+    try {
+      // 경기장 생성 (레벨 1)
+      await conn.query(
+        `INSERT INTO stadiums (team_id, level, name, max_capacity, monthly_maintenance_cost)
+         VALUES (?, 1, '기본 아레나', 100, 1000000)
+         ON DUPLICATE KEY UPDATE team_id = team_id`,
+        [teamId]
+      );
+      
+      // 숙소 생성 (레벨 1)
+      const conditionBonus = 10 + Math.floor(Math.random() * 21); // 10~30
+      const growthBonus = Math.floor(conditionBonus / 2);
+      await conn.query(
+        `INSERT INTO dormitories (team_id, level, condition_bonus, growth_bonus, monthly_maintenance_cost)
+         VALUES (?, 1, ?, ?, 500000)
+         ON DUPLICATE KEY UPDATE team_id = team_id`,
+        [teamId, conditionBonus, growthBonus]
+      );
+      
+      console.log('기본 시설 생성 완료:', teamId);
+    } catch (facilityError) {
+      console.error('기본 시설 생성 오류:', facilityError);
+      // 시설 생성 실패해도 팀 생성은 성공으로 처리
+    }
+    
     // 생성된 팀 정보 반환
     const [newTeam] = await conn.query(
       'SELECT * FROM teams WHERE id = ?',
