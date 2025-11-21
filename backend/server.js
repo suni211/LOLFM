@@ -113,6 +113,8 @@ app.use('/api/leagues', leaguesRoutes);
 app.use('/api/facilities', facilitiesRoutes);
 app.use('/api/game-time', gameTimeRoutes);
 app.use('/api/training', trainingRoutes);
+const friendlyMatchRoutes = require('./routes/friendlyMatches');
+app.use('/api/friendly-matches', friendlyMatchRoutes);
 
 // Google OAuth 2.0 인증 URL 생성
 app.get('/api/auth/google', (req, res) => {
@@ -227,6 +229,17 @@ NotificationService.setIO(io);
 // 게임 시간 자동 진행 시작 (6시간 = 1달)
 const GameTimeService = require('./services/gameTimeService');
 GameTimeService.startAutoAdvance(); // 6시간마다 1달 진행
+
+// 모든 리그에 AI 팀 자동 생성 (서버 시작 시)
+const LeagueService = require('./services/leagueService');
+(async () => {
+  try {
+    console.log('🤖 모든 리그에 AI 팀 생성 중...');
+    await LeagueService.initializeAllLeaguesWithAITeams();
+  } catch (error) {
+    console.error('❌ AI 팀 초기화 오류:', error);
+  }
+})();
 
 // 게임오버 체크 미들웨어
 const checkGameOver = async (req, res, next) => {

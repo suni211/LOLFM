@@ -73,14 +73,31 @@ router.post('/:playerId', async (req, res) => {
     );
     
     // 훈련 기록 저장
+    // training_type은 ENUM('INDIVIDUAL', 'TEAM')이므로 'INDIVIDUAL'로 하드코딩
+    // focus_stat에는 trainingType (예: 'mental', 'teamfight' 등) 저장
     const now = new Date();
-    await conn.query(
-      `INSERT INTO player_trainings (
-        player_id, training_type, training_year, training_month, stat_increase,
-        start_date, end_date, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED')`,
-      [playerId, trainingType, currentYear, currentMonth, increase, now, now]
-    );
+    
+    // 파라미터 순서 확인:
+    // 1. player_id
+    // 2. focus_stat (trainingType: 'mental', 'teamfight' 등)
+    // 3. training_year
+    // 4. training_month
+    // 5. stat_increase
+    // 6. start_date
+    // 7. end_date
+    try {
+      await conn.query(
+        `INSERT INTO player_trainings (
+          player_id, training_type, focus_stat, training_year, training_month, stat_increase,
+          start_date, end_date, status
+        ) VALUES (?, 'INDIVIDUAL', ?, ?, ?, ?, ?, ?, 'COMPLETED')`,
+        [playerId, trainingType, currentYear, currentMonth, increase, now, now]
+      );
+    } catch (insertError) {
+      console.error('훈련 기록 저장 오류:', insertError);
+      console.error('파라미터:', { playerId, trainingType, currentYear, currentMonth, increase });
+      throw insertError;
+    }
     
     // overall 재계산
     await conn.query(

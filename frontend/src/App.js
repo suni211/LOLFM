@@ -18,6 +18,7 @@ import Finances from './components/Finances';
 import TransferMarket from './components/TransferMarket';
 import Statistics from './components/Statistics';
 import PlayerDetail from './components/PlayerDetail';
+import FriendlyMatches from './components/FriendlyMatches';
 import './App.css';
 
 function App() {
@@ -117,6 +118,7 @@ function App() {
                   <Route path="/statistics" element={<Statistics team={team} />} />
                   <Route path="/league-standings" element={<LeagueStandings leagueId={team.league_id} />} />
                   <Route path="/rankings" element={<Rankings />} />
+                  <Route path="/friendly-matches" element={<FriendlyMatches team={team} />} />
                   <Route path="/players/:playerId" element={<PlayerDetail />} />
                 </Routes>
               )}

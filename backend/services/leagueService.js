@@ -370,6 +370,44 @@ class LeagueService {
       if (conn) conn.release();
     }
   }
+  
+  // 모든 리그에 AI 팀 자동 생성 (서버 시작 시 호출)
+  static async initializeAllLeaguesWithAITeams() {
+    let conn;
+    try {
+      conn = await pool.getConnection();
+      
+      // 모든 리그 조회
+      const leagues = await conn.query('SELECT * FROM leagues ORDER BY id');
+      
+      let totalCreated = 0;
+      
+      for (const league of leagues) {
+        // 현재 팀 수 확인
+        const teamCount = await conn.query(
+          'SELECT COUNT(*) as count FROM teams WHERE league_id = ?',
+          [league.id]
+        );
+        
+        const currentTeams = teamCount[0].count;
+        const neededTeams = league.max_teams - currentTeams;
+        
+        if (neededTeams > 0) {
+          console.log(`리그 ${league.id} (${league.name})에 ${neededTeams}개의 AI 팀 생성 중...`);
+          await this.fillLeagueWithAITeams(league.id);
+          totalCreated += neededTeams;
+        }
+      }
+      
+      console.log(`✅ 총 ${totalCreated}개의 AI 팀이 생성되었습니다.`);
+      return { message: `총 ${totalCreated}개의 AI 팀이 생성되었습니다.`, totalCreated };
+    } catch (error) {
+      console.error('리그 초기화 오류:', error);
+      throw error;
+    } finally {
+      if (conn) conn.release();
+    }
+  }
 }
 
 module.exports = LeagueService;

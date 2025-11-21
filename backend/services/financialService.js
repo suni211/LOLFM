@@ -77,13 +77,39 @@ class FinancialService {
         'SELECT SUM(salary) as total_salary FROM players WHERE team_id = ?',
         [teamId]
       );
-      const salaryCost = players[0].total_salary || 0;
+      const salaryCost = Number(players[0]?.total_salary || 0);
+
+      // 훈련장 유지비
+      const training = await conn.query(
+        'SELECT monthly_maintenance_cost FROM training_facilities WHERE team_id = ?',
+        [teamId]
+      );
+      const trainingCost = Number(training[0]?.monthly_maintenance_cost || 0);
+
+      // 의료실 유지비
+      const medical = await conn.query(
+        'SELECT monthly_maintenance_cost FROM medical_rooms WHERE team_id = ?',
+        [teamId]
+      );
+      const medicalCost = Number(medical[0]?.monthly_maintenance_cost || 0);
+
+      // 미디어실 유지비
+      const media = await conn.query(
+        'SELECT monthly_maintenance_cost FROM media_rooms WHERE team_id = ?',
+        [teamId]
+      );
+      const mediaCost = Number(media[0]?.monthly_maintenance_cost || 0);
+
+      const total = Number(stadiumCost) + Number(dormitoryCost) + salaryCost + trainingCost + medicalCost + mediaCost;
 
       return {
-        stadium: stadiumCost,
-        dormitory: dormitoryCost,
+        stadium: Number(stadiumCost),
+        dormitory: Number(dormitoryCost),
+        training: trainingCost,
+        medical: medicalCost,
+        media: mediaCost,
         salary: salaryCost,
-        total: stadiumCost + dormitoryCost + salaryCost
+        total: total
       };
     } finally {
       conn.release();

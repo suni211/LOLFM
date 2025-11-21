@@ -98,16 +98,16 @@ router.get('/summary/:teamId', async (req, res) => {
       'SELECT monthly_support FROM sponsors WHERE team_id = ? AND CURDATE() BETWEEN contract_start AND contract_end',
       [teamId]
     );
-    const sponsorIncome = sponsor?.monthly_support || 0;
+    const sponsorIncome = Number(sponsor?.[0]?.monthly_support || 0);
     
     // 월별 지출 계산
     const maintenance = await FinancialService.calculateMonthlyMaintenance(teamId);
-    const totalExpense = maintenance.total || 0;
+    const totalExpense = Number(maintenance.total || 0);
     
     conn.release();
     
     res.json({
-      current_money: team.money,
+      current_money: String(team[0]?.money || 0), // BigInt를 문자열로 변환
       monthly_income: sponsorIncome,
       monthly_expense: totalExpense,
       net_income: sponsorIncome - totalExpense

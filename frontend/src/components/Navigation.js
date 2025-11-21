@@ -146,6 +146,10 @@ function Navigation({ user, onLogout, team }) {
                 <span className="nav-icon">🏆</span>
                 <span className="nav-text">리그 순위</span>
               </Link>
+              <Link to="/friendly-matches" className={`nav-link ${isActive('/friendly-matches')}`}>
+                <span className="nav-icon">🤝</span>
+                <span className="nav-text">친선 경기</span>
+              </Link>
               <Link to="/rankings" className={`nav-link ${isActive('/rankings')}`}>
                 <span className="nav-icon">📊</span>
                 <span className="nav-text">랭킹</span>

@@ -40,9 +40,24 @@ function Finances({ team }) {
   };
 
   const formatMoney = (amount) => {
-    if (amount >= 100000000) return `${(amount / 100000000).toFixed(1)}억`;
-    if (amount >= 10000) return `${(amount / 10000).toFixed(0)}만`;
-    return amount?.toLocaleString();
+    // null, undefined, NaN 처리
+    if (!amount || isNaN(amount)) return '0';
+    
+    // 문자열을 숫자로 변환 (BigInt 처리)
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+    if (isNaN(numAmount)) return '0';
+    
+    // 절댓값으로 처리
+    const absAmount = Math.abs(numAmount);
+    
+    if (absAmount >= 100000000) {
+      const eok = absAmount / 100000000;
+      // 소수점이 0이면 정수로 표시
+      return eok % 1 === 0 ? `${eok}억` : `${eok.toFixed(1)}억`;
+    } else if (absAmount >= 10000) {
+      return `${Math.floor(absAmount / 10000)}만`;
+    }
+    return absAmount.toLocaleString() || '0';
   };
 
   const getTypeIcon = (type) => {
@@ -95,9 +110,9 @@ function Finances({ team }) {
           <div className="summary-icon">📊</div>
           <div className="summary-info">
             <div className="summary-label">순수익</div>
-            <div className={`summary-value ${(summary?.monthly_income - summary?.monthly_expense) >= 0 ? 'positive' : 'negative'}`}>
-              {(summary?.monthly_income - summary?.monthly_expense) >= 0 ? '+' : ''}
-              {formatMoney(summary?.monthly_income - summary?.monthly_expense)}
+            <div className={`summary-value ${(Number(summary?.monthly_income || 0) - Number(summary?.monthly_expense || 0)) >= 0 ? 'positive' : 'negative'}`}>
+              {(Number(summary?.monthly_income || 0) - Number(summary?.monthly_expense || 0)) >= 0 ? '+' : ''}
+              {formatMoney(Number(summary?.monthly_income || 0) - Number(summary?.monthly_expense || 0))}
             </div>
           </div>
         </div>
