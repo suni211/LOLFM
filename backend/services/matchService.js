@@ -1,11 +1,33 @@
 const pool = require('../database/pool');
 
 class MatchService {
-  // 경기 시뮬레이션
-  static async simulateMatch(match) {
+  // 경기 시뮬레이션 (matchId로)
+  static async simulateMatch(matchId) {
     let conn;
     try {
       conn = await pool.getConnection();
+      await conn.beginTransaction();
+      
+      // 경기 정보 조회
+      const [matches] = await conn.query(
+        'SELECT * FROM matches WHERE id = ?',
+        [matchId]
+      );
+      
+      if (!matches || matches.length === 0) {
+        throw new Error('경기를 찾을 수 없습니다.');
+      }
+      
+      const match = matches[0];
+      
+      if (match.status === 'completed') {
+        return {
+          homeScore: match.home_score,
+          awayScore: match.away_score,
+          status: 'completed',
+          message: '이미 완료된 경기입니다.'
+        };
+      }
       
       // 홈팀과 원정팀 선수 정보 조회
       const homePlayers = await conn.query(
@@ -18,41 +40,68 @@ class MatchService {
         [match.away_team_id]
       );
       
+      if (homePlayers.length < 5 || awayPlayers.length < 5) {
+        throw new Error('팀에 선수가 부족합니다.');
+      }
+      
       // 팀 전력 계산
       const homeTeamPower = this.calculateTeamPower(homePlayers);
       const awayTeamPower = this.calculateTeamPower(awayPlayers);
       
+      // 홈 어드밴티지 추가 (10%)
+      const homeAdvantage = 1.1;
+      const adjustedHomePower = homeTeamPower * homeAdvantage;
+      
       // 승률 계산
-      const totalPower = homeTeamPower + awayTeamPower;
-      const homeWinChance = homeTeamPower / totalPower;
+      const totalPower = adjustedHomePower + awayTeamPower;
+      const homeWinChance = adjustedHomePower / totalPower;
       
-      // 경기 결과 결정
+      // 경기 결과 결정 (BO3 방식)
       const random = Math.random();
-      let homeScore, awayScore;
+      let homeScore = 0, awayScore = 0;
       
-      if (random < homeWinChance) {
-        // 홈팀 승리
-        homeScore = 2;
-        awayScore = Math.random() < 0.7 ? 0 : 1;
-      } else {
-        // 원정팀 승리
-        awayScore = 2;
-        homeScore = Math.random() < 0.7 ? 0 : 1;
+      // 3게임 시뮬레이션
+      for (let game = 0; game < 3; game++) {
+        const gameRandom = Math.random();
+        if (gameRandom < homeWinChance) {
+          homeScore++;
+          if (homeScore === 2) break; // 2승하면 종료
+        } else {
+          awayScore++;
+          if (awayScore === 2) break; // 2승하면 종료
+        }
       }
       
       // 경기 결과 업데이트
       await conn.query(
         `UPDATE matches 
-         SET home_score = ?, away_score = ?, status = 'completed', match_date = NOW()
+         SET home_score = ?, away_score = ?, status = 'completed', 
+             match_date = NOW(), completed_at = NOW()
          WHERE id = ?`,
-        [homeScore, awayScore, match.id]
+        [homeScore, awayScore, matchId]
       );
       
       // 리그 순위 업데이트
-      await this.updateStandings(conn, match.league_id);
+      if (match.league_id) {
+        await this.updateStandings(conn, match.league_id, match.home_team_id, match.away_team_id, homeScore, awayScore);
+      }
       
-      return { homeScore, awayScore };
+      // 팀 통계 업데이트
+      await this.updateTeamStats(conn, match.home_team_id, homeScore > awayScore, homeScore === awayScore);
+      await this.updateTeamStats(conn, match.away_team_id, awayScore > homeScore, homeScore === awayScore);
+      
+      await conn.commit();
+      
+      return {
+        homeScore,
+        awayScore,
+        homeTeamPower: Math.round(homeTeamPower),
+        awayTeamPower: Math.round(awayTeamPower),
+        status: 'completed',
+        message: homeScore > awayScore ? '홈팀 승리' : awayScore > homeScore ? '원정팀 승리' : '무승부'
+      };
     } catch (error) {
+      await conn.rollback();
       console.error('경기 시뮬레이션 오류:', error);
       throw error;
     } finally {
@@ -60,136 +109,232 @@ class MatchService {
     }
   }
   
-  // 팀 전력 계산
+  // 팀 전력 계산 (더 정확한 알고리즘)
   static calculateTeamPower(players) {
+    if (!players || players.length === 0) return 0;
+    
     let totalPower = 0;
+    const positionWeights = {
+      'TOP': 0.15,
+      'JGL': 0.20,
+      'MID': 0.25,
+      'ADC': 0.20,
+      'SPT': 0.20
+    };
     
     for (const player of players) {
-      const playerPower = 
-        player.overall * 0.3 +
-        player.teamfight * 0.2 +
-        player.laning * 0.2 +
-        player.cs_skill * 0.15 +
-        player.mental * 0.1 +
-        (player.condition / 100) * 0.05;
+      const positionWeight = positionWeights[player.position] || 0.2;
       
-      totalPower += playerPower;
+      // 포지션별 중요 스탯 가중치
+      let playerPower = 0;
+      
+      if (player.position === 'JGL') {
+        playerPower = 
+          player.overall * 0.25 +
+          player.jungling * 0.30 +
+          player.teamfight * 0.20 +
+          player.mental * 0.15 +
+          player.leadership * 0.10;
+      } else if (player.position === 'SPT') {
+        playerPower = 
+          player.overall * 0.20 +
+          player.teamfight * 0.25 +
+          player.mental * 0.20 +
+          player.leadership * 0.20 +
+          player.laning * 0.15;
+      } else {
+        playerPower = 
+          player.overall * 0.25 +
+          player.laning * 0.25 +
+          player.teamfight * 0.20 +
+          player.cs_skill * 0.15 +
+          player.mental * 0.10 +
+          player.leadership * 0.05;
+      }
+      
+      // 컨디션 반영
+      const conditionMultiplier = player.condition / 100;
+      playerPower *= conditionMultiplier;
+      
+      totalPower += playerPower * positionWeight;
     }
     
     return totalPower;
   }
   
   // 리그 순위 업데이트
-  static async updateStandings(conn, leagueId) {
-    // 해당 리그의 모든 팀 조회
-    const teams = await conn.query(
-      'SELECT DISTINCT home_team_id as team_id FROM matches WHERE league_id = ? UNION SELECT DISTINCT away_team_id FROM matches WHERE league_id = ?',
-      [leagueId, leagueId]
-    );
-    
-    for (const team of teams) {
-      // 팀의 경기 결과 집계
-      const homeMatches = await conn.query(
-        `SELECT * FROM matches 
-         WHERE home_team_id = ? AND league_id = ? AND status = 'completed'`,
-        [team.team_id, leagueId]
-      );
+  static async updateStandings(conn, leagueId, homeTeamId, awayTeamId, homeScore, awayScore) {
+    try {
+      // 게임 시간 조회
+      const [gameTime] = await conn.query('SELECT * FROM game_time WHERE id = 1');
+      const seasonYear = gameTime.current_year;
       
-      const awayMatches = await conn.query(
-        `SELECT * FROM matches 
-         WHERE away_team_id = ? AND league_id = ? AND status = 'completed'`,
-        [team.team_id, leagueId]
-      );
+      // 홈팀 순위 업데이트
+      const homeWins = homeScore > awayScore ? 1 : 0;
+      const homeDraws = homeScore === awayScore ? 1 : 0;
+      const homeLosses = homeScore < awayScore ? 1 : 0;
+      const homePoints = homeWins * 3 + homeDraws * 1;
+      const homeGoalDiff = homeScore - awayScore;
       
-      let wins = 0, draws = 0, losses = 0, points = 0;
-      
-      // 홈 경기 집계
-      for (const match of homeMatches) {
-        if (match.home_score > match.away_score) {
-          wins++;
-          points += 3;
-        } else if (match.home_score === match.away_score) {
-          draws++;
-          points += 1;
-        } else {
-          losses++;
-        }
-      }
-      
-      // 원정 경기 집계
-      for (const match of awayMatches) {
-        if (match.away_score > match.home_score) {
-          wins++;
-          points += 3;
-        } else if (match.away_score === match.home_score) {
-          draws++;
-          points += 1;
-        } else {
-          losses++;
-        }
-      }
-      
-      // league_standings 업데이트
       await conn.query(
-        `INSERT INTO league_standings (league_id, team_id, wins, draws, losses, points)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE 
-         wins = ?, draws = ?, losses = ?, points = ?`,
-        [leagueId, team.team_id, wins, draws, losses, points, wins, draws, losses, points]
+        `INSERT INTO league_standings (
+          league_id, team_id, season_year, wins, losses, draws, 
+          points, goals_for, goals_against, goal_difference
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          wins = wins + ?,
+          losses = losses + ?,
+          draws = draws + ?,
+          points = points + ?,
+          goals_for = goals_for + ?,
+          goals_against = goals_against + ?,
+          goal_difference = goal_difference + ?`,
+        [
+          leagueId, homeTeamId, seasonYear, homeWins, homeLosses, homeDraws,
+          homePoints, homeScore, awayScore, homeGoalDiff,
+          homeWins, homeLosses, homeDraws, homePoints, homeScore, awayScore, homeGoalDiff
+        ]
       );
+      
+      // 원정팀 순위 업데이트
+      const awayWins = awayScore > homeScore ? 1 : 0;
+      const awayDraws = homeScore === awayScore ? 1 : 0;
+      const awayLosses = awayScore < homeScore ? 1 : 0;
+      const awayPoints = awayWins * 3 + awayDraws * 1;
+      const awayGoalDiff = awayScore - homeScore;
+      
+      await conn.query(
+        `INSERT INTO league_standings (
+          league_id, team_id, season_year, wins, losses, draws, 
+          points, goals_for, goals_against, goal_difference
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          wins = wins + ?,
+          losses = losses + ?,
+          draws = draws + ?,
+          points = points + ?,
+          goals_for = goals_for + ?,
+          goals_against = goals_against + ?,
+          goal_difference = goal_difference + ?`,
+        [
+          leagueId, awayTeamId, seasonYear, awayWins, awayLosses, awayDraws,
+          awayPoints, awayScore, homeScore, awayGoalDiff,
+          awayWins, awayLosses, awayDraws, awayPoints, awayScore, homeScore, awayGoalDiff
+        ]
+      );
+      
+      // 순위 재계산
+      await this.recalculateRanks(conn, leagueId, seasonYear);
+    } catch (error) {
+      console.error('순위 업데이트 오류:', error);
+      throw error;
     }
   }
   
-  // 리그 스케줄 생성
-  static async generateLeagueSchedule(leagueId) {
+  // 순위 재계산
+  static async recalculateRanks(conn, leagueId, seasonYear) {
+    try {
+      // 모든 팀의 순위 데이터 조회
+      const standings = await conn.query(
+        `SELECT * FROM league_standings 
+         WHERE league_id = ? AND season_year = ?
+         ORDER BY points DESC, goal_difference DESC, goals_for DESC`,
+        [leagueId, seasonYear]
+      );
+      
+      // 순위 업데이트
+      for (let i = 0; i < standings.length; i++) {
+        await conn.query(
+          'UPDATE league_standings SET `rank` = ? WHERE id = ?',
+          [i + 1, standings[i].id]
+        );
+      }
+    } catch (error) {
+      console.error('순위 재계산 오류:', error);
+      throw error;
+    }
+  }
+  
+  // 팀 통계 업데이트
+  static async updateTeamStats(conn, teamId, isWin, isDraw) {
+    try {
+      if (isWin) {
+        await conn.query(
+          'UPDATE teams SET reputation = reputation + 5, fans = fans + 1000 WHERE id = ?',
+          [teamId]
+        );
+      } else if (isDraw) {
+        await conn.query(
+          'UPDATE teams SET reputation = reputation + 2, fans = fans + 500 WHERE id = ?',
+          [teamId]
+        );
+      } else {
+        await conn.query(
+          'UPDATE teams SET fans = GREATEST(fans - 200, 0) WHERE id = ?',
+          [teamId]
+        );
+      }
+    } catch (error) {
+      console.error('팀 통계 업데이트 오류:', error);
+    }
+  }
+  
+  // 오늘의 경기 조회
+  static async getTodayMatches() {
+    let conn;
+    try {
+      conn = await pool.getConnection();
+      const [gameTime] = await conn.query('SELECT * FROM game_time WHERE id = 1');
+      
+      const matches = await conn.query(
+        `SELECT m.*, 
+         ht.name as home_team_name, ht.logo_path as home_team_logo,
+         at.name as away_team_name, at.logo_path as away_team_logo,
+         l.name as league_name
+         FROM matches m
+         JOIN teams ht ON m.home_team_id = ht.id
+         JOIN teams at ON m.away_team_id = at.id
+         LEFT JOIN leagues l ON m.league_id = l.id
+         WHERE DATE(m.match_date) = DATE(?) 
+         AND m.status = 'scheduled'
+         ORDER BY m.match_date ASC`,
+        [`${gameTime.current_year}-${String(gameTime.current_month).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`]
+      );
+      
+      return matches;
+    } catch (error) {
+      console.error('오늘의 경기 조회 오류:', error);
+      return [];
+    } finally {
+      if (conn) conn.release();
+    }
+  }
+  
+  // 팀의 경기 일정 조회
+  static async getTeamMatches(teamId, limit = 10) {
     let conn;
     try {
       conn = await pool.getConnection();
       
-      // 리그의 팀 조회
-      const teams = await conn.query(
-        'SELECT id FROM teams WHERE league_id = ? ORDER BY id',
-        [leagueId]
+      const matches = await conn.query(
+        `SELECT m.*, 
+         ht.name as home_team_name, ht.logo_path as home_team_logo,
+         at.name as away_team_name, at.logo_path as away_team_logo,
+         l.name as league_name
+         FROM matches m
+         JOIN teams ht ON m.home_team_id = ht.id
+         JOIN teams at ON m.away_team_id = at.id
+         LEFT JOIN leagues l ON m.league_id = l.id
+         WHERE (m.home_team_id = ? OR m.away_team_id = ?)
+         ORDER BY m.match_date DESC
+         LIMIT ?`,
+        [teamId, teamId, limit]
       );
       
-      if (teams.length < 2) {
-        throw new Error('리그에 최소 2팀이 필요합니다.');
-      }
-      
-      // 현재 게임 시간 조회
-      const [gameTime] = await conn.query(
-        'SELECT * FROM game_time LIMIT 1'
-      );
-      
-      let matchDate = new Date(gameTime.current_year, gameTime.current_month - 1, 1);
-      
-      // 홈 앤 어웨이 방식으로 모든 팀 간 경기 생성
-      for (let i = 0; i < teams.length; i++) {
-        for (let j = i + 1; j < teams.length; j++) {
-          // 홈 경기
-          await conn.query(
-            `INSERT INTO matches (league_id, home_team_id, away_team_id, scheduled_date, status)
-             VALUES (?, ?, ?, ?, 'scheduled')`,
-            [leagueId, teams[i].id, teams[j].id, matchDate]
-          );
-          
-          matchDate.setDate(matchDate.getDate() + 7); // 일주일 간격
-          
-          // 원정 경기
-          await conn.query(
-            `INSERT INTO matches (league_id, home_team_id, away_team_id, scheduled_date, status)
-             VALUES (?, ?, ?, ?, 'scheduled')`,
-            [leagueId, teams[j].id, teams[i].id, matchDate]
-          );
-          
-          matchDate.setDate(matchDate.getDate() + 7);
-        }
-      }
-      
-      console.log(`리그 ${leagueId} 스케줄 생성 완료`);
+      return matches;
     } catch (error) {
-      console.error('스케줄 생성 오류:', error);
-      throw error;
+      console.error('팀 경기 조회 오류:', error);
+      return [];
     } finally {
       if (conn) conn.release();
     }

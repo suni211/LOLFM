@@ -6,11 +6,28 @@ import './Training.css';
 function Training({ team }) {
   const [players, setPlayers] = useState([]);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [trainingType, setTrainingType] = useState('physical');
+  const [trainingType, setTrainingType] = useState('mental');
+  const [gameTime, setGameTime] = useState(null);
+  const [trainingHistory, setTrainingHistory] = useState({});
 
   useEffect(() => {
-    loadPlayers();
+    if (team) {
+      loadPlayers();
+      loadGameTime();
+    }
   }, [team]);
+
+  const loadGameTime = async () => {
+    try {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_URL}/game-time`, {
+        withCredentials: true
+      });
+      setGameTime(response.data);
+    } catch (error) {
+      console.error('게임 시간 로드 오류:', error);
+    }
+  };
 
   const loadPlayers = async () => {
     try {
@@ -18,9 +35,28 @@ function Training({ team }) {
       const token = authService.getTokenValue();
 
       const response = await axios.get(`${API_URL}/players/team/${team.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
       setPlayers(response.data);
+      
+      // 각 선수의 훈련 기록 로드
+      const history = {};
+      for (const player of response.data) {
+        try {
+          const historyResponse = await axios.get(
+            `${API_URL}/training/player/${player.id}/history`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+              withCredentials: true
+            }
+          );
+          history[player.id] = historyResponse.data;
+        } catch (err) {
+          history[player.id] = [];
+        }
+      }
+      setTrainingHistory(history);
     } catch (error) {
       console.error('선수 로드 오류:', error);
     }
@@ -32,17 +68,34 @@ function Training({ team }) {
       return;
     }
 
+    // 이번 달 훈련 여부 확인
+    if (gameTime) {
+      const playerHistory = trainingHistory[selectedPlayer.id] || [];
+      const hasTrainedThisMonth = playerHistory.some(
+        t => t.training_year === gameTime.current_year && 
+             t.training_month === gameTime.current_month
+      );
+      
+      if (hasTrainedThisMonth) {
+        window.alert('이번 달에는 이미 훈련했습니다. 다음 달에 다시 시도해주세요.');
+        return;
+      }
+    }
+
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const token = authService.getTokenValue();
 
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/training/${selectedPlayer.id}`,
         { trainingType },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        }
       );
 
-      window.alert('훈련이 시작되었습니다!');
+      window.alert(`훈련이 완료되었습니다! ${response.data.statIncrease} 증가했습니다.`);
       loadPlayers();
     } catch (error) {
       window.alert(error.response?.data?.error || '훈련 실패');
@@ -112,6 +165,21 @@ function Training({ team }) {
                     <span>컨디션:</span>
                     <span className={selectedPlayer.condition < 50 ? 'warning' : ''}>{selectedPlayer.condition}%</span>
                   </div>
+                  {gameTime && (() => {
+                    const playerHistory = trainingHistory[selectedPlayer.id] || [];
+                    const hasTrainedThisMonth = playerHistory.some(
+                      t => t.training_year === gameTime.current_year && 
+                           t.training_month === gameTime.current_month
+                    );
+                    return (
+                      <div className="detail-row">
+                        <span>이번 달 훈련:</span>
+                        <span className={hasTrainedThisMonth ? 'warning' : 'success'}>
+                          {hasTrainedThisMonth ? '완료' : '가능'}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

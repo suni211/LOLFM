@@ -120,14 +120,14 @@ router.post('/', upload.single('logo'), async (req, res) => {
         if (hasIsAi) {
           const result = await conn.query(
             `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money, is_ai)
-             VALUES (?, ?, ?, ?, ?, ?, 100000000, FALSE)`,
+             VALUES (?, ?, ?, ?, ?, ?, 1000000000, FALSE)`,
             [user_id, region_id, league_id, name, abbreviation, logoPath]
           );
           teamId = result.insertId;
         } else {
           const result = await conn.query(
             `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money)
-             VALUES (?, ?, ?, ?, ?, ?, 100000000)`,
+             VALUES (?, ?, ?, ?, ?, ?, 1000000000)`,
             [user_id, region_id, league_id, name, abbreviation, logoPath]
           );
           teamId = result.insertId;

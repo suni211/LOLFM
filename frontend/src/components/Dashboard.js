@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import authService from '../services/auth';
 import LogoUpload from './LogoUpload';
+import MatchWatch from './MatchWatch';
 import './Dashboard.css';
 
 function Dashboard({ user, team }) {
@@ -10,6 +11,8 @@ function Dashboard({ user, team }) {
   const [notifications, setNotifications] = useState([]);
   const [gameTime, setGameTime] = useState(null);
   const [players, setPlayers] = useState([]);
+  const [todayMatches, setTodayMatches] = useState([]);
+  const [selectedMatchId, setSelectedMatchId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -43,6 +46,17 @@ function Dashboard({ user, team }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPlayers(playersResponse.data);
+
+      // 오늘의 경기 조회
+      try {
+        const matchesResponse = await axios.get(`${API_URL}/matches/today`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        setTodayMatches(matchesResponse.data);
+      } catch (error) {
+        console.log('오늘의 경기 없음');
+      }
     } catch (error) {
       console.error('데이터 로드 오류:', error);
     }
@@ -156,6 +170,37 @@ function Dashboard({ user, team }) {
         </div>
       </div>
 
+      {/* 오늘의 경기 */}
+      {todayMatches.length > 0 && (
+        <div className="dashboard-section">
+          <h2 className="section-title">⚽ 오늘의 경기</h2>
+          <div className="matches-grid">
+            {todayMatches.map(match => (
+              <div
+                key={match.id}
+                className="match-card"
+                onClick={() => setSelectedMatchId(match.id)}
+              >
+                <div className="match-teams">
+                  <div className="match-team">
+                    <span className="team-name">{match.home_team_name}</span>
+                    <span className="team-score">{match.home_score ?? '-'}</span>
+                  </div>
+                  <div className="match-vs">VS</div>
+                  <div className="match-team">
+                    <span className="team-score">{match.away_score ?? '-'}</span>
+                    <span className="team-name">{match.away_team_name}</span>
+                  </div>
+                </div>
+                <div className="match-status">
+                  {match.status === 'scheduled' ? '예정' : match.status === 'completed' ? '완료' : '진행중'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 알림 */}
       <div className="dashboard-section">
         <h2 className="section-title">🔔 최근 알림</h2>
@@ -181,6 +226,14 @@ function Dashboard({ user, team }) {
           </div>
         </div>
       </div>
+
+      {/* 경기 관전 모달 */}
+      {selectedMatchId && (
+        <MatchWatch
+          matchId={selectedMatchId}
+          onClose={() => setSelectedMatchId(null)}
+        />
+      )}
     </div>
   );
 }

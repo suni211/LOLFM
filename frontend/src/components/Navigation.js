@@ -65,19 +65,26 @@ function Navigation({ user, onLogout, team }) {
   };
 
   const formatMoney = (amount) => {
-    if (amount >= 100000000) {
-      return `${(amount / 100000000).toFixed(1)}억`;
-    } else if (amount >= 10000) {
-      return `${(amount / 10000).toFixed(0)}만`;
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : (amount || 0);
+    if (numAmount >= 100000000) {
+      const eok = numAmount / 100000000;
+      // 소수점이 0이면 정수로 표시
+      return eok % 1 === 0 ? `${eok}억` : `${eok.toFixed(1)}억`;
+    } else if (numAmount >= 10000) {
+      return `${Math.floor(numAmount / 10000)}만`;
     }
-    return amount?.toLocaleString() || '0';
+    return numAmount.toLocaleString() || '0';
   };
 
   const formatDate = () => {
-    if (!gameTime) return '2024년 1월';
+    if (!gameTime) {
+      // 기본값: 현재 년도, 1월
+      const now = new Date();
+      return `${now.getFullYear()}년 1월`;
+    }
     // current_year와 current_month는 백틱으로 감싸져 있으므로 직접 접근
-    const year = gameTime.current_year || 2024;
-    const month = gameTime.current_month || 1;
+    const year = gameTime.current_year || gameTime.current_year || 2024;
+    const month = gameTime.current_month || gameTime.current_month || 1;
     return `${year}년 ${month}월`;
   };
 

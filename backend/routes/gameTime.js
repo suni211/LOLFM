@@ -10,14 +10,15 @@ router.get('/', async (req, res) => {
     let [gameTime] = await conn.query('SELECT * FROM game_time WHERE id = 1');
     
     if (!gameTime || gameTime.length === 0) {
-      // 게임 시간이 없으면 초기화
+      // 게임 시간이 없으면 2024년 11월로 초기화
       await conn.query(
         `INSERT INTO game_time (id, \`current_date\`, \`current_month\`, \`current_year\`, is_stove_league)
-         VALUES (1, CURDATE(), MONTH(CURDATE()), YEAR(CURDATE()), FALSE)
+         VALUES (1, '2024-11-01', 11, 2024, FALSE)
          ON DUPLICATE KEY UPDATE 
-         \`current_date\` = CURDATE(),
-         \`current_month\` = MONTH(CURDATE()),
-         \`current_year\` = YEAR(CURDATE())`
+         \`current_date\` = '2024-11-01',
+         \`current_month\` = 11,
+         \`current_year\` = 2024,
+         is_stove_league = FALSE`
       );
       [gameTime] = await conn.query('SELECT * FROM game_time WHERE id = 1');
     }

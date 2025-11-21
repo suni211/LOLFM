@@ -3,7 +3,8 @@ const FinancialService = require('./financialService');
 
 /**
  * 게임 시간 관리 서비스
- * 1시간 = 1달 (게임 내 시간)
+ * 6시간 = 1달 (게임 내 시간)
+ * 24시간 = 4달
  */
 class GameTimeService {
   // 현재 게임 시간 조회
@@ -34,7 +35,7 @@ class GameTimeService {
       let newYear = currentTime.current_year;
       let isStoveLeague = false;
 
-      // 12월이면 다음 해 1월로, 스토브리그 시작
+      // 12월이면 다음 해 1월로
       if (newMonth > 12) {
         newMonth = 1;
         newYear += 1;
@@ -43,6 +44,8 @@ class GameTimeService {
       // 12월 1일 ~ 1월 1일은 스토브리그
       if (newMonth === 12 || newMonth === 1) {
         isStoveLeague = true;
+      } else {
+        isStoveLeague = false;
       }
 
       // 게임 시간 업데이트
