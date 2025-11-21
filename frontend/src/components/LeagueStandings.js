@@ -25,6 +25,7 @@ function LeagueStandings({ leagueId: propLeagueId, team }) {
       // 리그가 선택되지 않았으면 첫 번째 리그 선택
       setSelectedLeagueId(leagues[0].id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeagueId, leagues]);
 
   const loadRegions = async () => {
@@ -52,11 +53,13 @@ function LeagueStandings({ leagueId: propLeagueId, team }) {
   };
 
   const loadStandings = async () => {
+    if (!selectedLeagueId) return;
+    
     try {
       setLoading(true);
       setError(null);
       const token = authService.getTokenValue();
-      const response = await axios.get(`${API_URL}/matches/league/${leagueId}/standings`, {
+      const response = await axios.get(`${API_URL}/matches/league/${selectedLeagueId}/standings`, {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true
       });
