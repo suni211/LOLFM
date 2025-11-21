@@ -1,188 +1,118 @@
 const pool = require('../database/pool');
 
-/**
- * 스폰서 시스템 서비스
- */
 class SponsorService {
-  // 스폰서 생성 (인지도 기반)
-  static generateSponsors() {
-    return {
-      1: [
-        { name: '박민준 컴퍼니', monthlySupport: 5000000, winBonus: 0 },
-        { name: '데이르미나 CM', monthlySupport: 4500000, winBonus: 0 },
-        { name: '환성', monthlySupport: 10000000, winBonus: 0 },
-        { name: '구성미홍', monthlySupport: 2000000, winBonus: 1000000 }
-      ],
-      2: [
-        { name: '테크노글로벌', monthlySupport: 15000000, winBonus: 2000000 },
-        { name: '게이밍월드', monthlySupport: 12000000, winBonus: 1500000 },
-        { name: '스포츠넷', monthlySupport: 18000000, winBonus: 2500000 }
-      ],
-      3: [
-        { name: '엘리트스포츠', monthlySupport: 30000000, winBonus: 5000000, equipment: true },
-        { name: '챔피언스그룹', monthlySupport: 25000000, winBonus: 4000000, equipment: true },
-        { name: '프로게이밍코리아', monthlySupport: 35000000, winBonus: 6000000, equipment: true }
-      ],
-      4: [
-        { name: '글로벌게이밍', monthlySupport: 50000000, winBonus: 10000000, equipment: true, awarenessBonus: 10 },
-        { name: '월드챔피언스', monthlySupport: 60000000, winBonus: 12000000, equipment: true, awarenessBonus: 15 },
-        { name: '엘리트리그', monthlySupport: 55000000, winBonus: 11000000, equipment: true, awarenessBonus: 12 }
-      ],
-      5: [
-        { name: '레전드스포츠', monthlySupport: 100000000, winBonus: 20000000, equipment: true, awarenessBonus: 25, fanBonus: 500 },
-        { name: '월드게이밍엠파이어', monthlySupport: 120000000, winBonus: 25000000, equipment: true, awarenessBonus: 30, fanBonus: 600 },
-        { name: '챔피언스엠파이어', monthlySupport: 150000000, winBonus: 30000000, equipment: true, awarenessBonus: 35, fanBonus: 800 }
-      ]
-    };
-  }
-
-  // 스폰서 제안 (인지도 기반)
-  static async offerSponsor(teamId) {
-    const conn = await pool.getConnection();
+  // 사용 가능한 스폰서 조회
+  static async getAvailableSponsors(teamId) {
+    let conn;
     try {
-      const team = await conn.query(
-        'SELECT awareness, reputation, fans FROM teams WHERE id = ?',
+      conn = await pool.getConnection();
+      
+      // 팀 정보 조회
+      const [team] = await conn.query(
+        'SELECT * FROM teams WHERE id = ?',
         [teamId]
       );
-
-      if (team.length === 0) return null;
-
-      const t = team[0];
       
-      // 인지도 기반 스폰서 등급 결정
-      let maxRating = 1;
-      if (t.awareness >= 1000) maxRating = 5;
-      else if (t.awareness >= 500) maxRating = 4;
-      else if (t.awareness >= 200) maxRating = 3;
-      else if (t.awareness >= 50) maxRating = 2;
-
-      const sponsors = this.generateSponsors();
-      const availableSponsors = [];
-      
-      for (let rating = 1; rating <= maxRating; rating++) {
-        availableSponsors.push(...sponsors[rating].map(s => ({ ...s, rating })));
+      if (!team) {
+        throw new Error('팀을 찾을 수 없습니다.');
       }
-
-      // 랜덤 선택
-      const selected = availableSponsors[Math.floor(Math.random() * availableSponsors.length)];
       
-      return {
-        name: selected.name,
-        rating: selected.rating,
-        monthlySupport: selected.monthlySupport,
-        winBonus: selected.winBonus,
-        equipment: selected.equipment || false,
-        awarenessBonus: selected.awarenessBonus || 0,
-        fanBonus: selected.fanBonus || 0
-      };
+      // 팀의 조건에 맞는 스폰서 조회
+      const sponsors = await conn.query(
+        `SELECT * FROM sponsors 
+         WHERE min_awareness <= ? 
+         AND min_reputation <= ? 
+         AND min_fans <= ?
+         ORDER BY rating DESC`,
+        [team.awareness, team.reputation, team.fans]
+      );
+      
+      return sponsors;
+    } catch (error) {
+      console.error('스폰서 조회 오류:', error);
+      throw error;
     } finally {
-      conn.release();
+      if (conn) conn.release();
     }
   }
-
+  
   // 스폰서 계약
-  static async contractSponsor(teamId, sponsorData) {
-    const conn = await pool.getConnection();
+  static async contractSponsor(teamId, sponsorId) {
+    let conn;
     try {
-      const contractStart = new Date();
-      const contractEnd = new Date();
-      contractEnd.setFullYear(contractEnd.getFullYear() + 1); // 1년 계약
-
+      conn = await pool.getConnection();
+      
+      // 기존 스폰서 확인
+      const existingContracts = await conn.query(
+        'SELECT * FROM team_sponsors WHERE team_id = ? AND status = \'active\'',
+        [teamId]
+      );
+      
+      if (existingContracts.length > 0) {
+        throw new Error('이미 계약 중인 스폰서가 있습니다.');
+      }
+      
+      // 스폰서 정보 조회
+      const [sponsor] = await conn.query(
+        'SELECT * FROM sponsors WHERE id = ?',
+        [sponsorId]
+      );
+      
+      if (!sponsor) {
+        throw new Error('스폰서를 찾을 수 없습니다.');
+      }
+      
+      // 계약 생성
       await conn.query(
-        `INSERT INTO sponsors (team_id, name, star_rating, monthly_support, win_bonus, contract_start, contract_end)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [teamId, sponsorData.name, sponsorData.rating, sponsorData.monthlySupport, 
-         sponsorData.winBonus, contractStart, contractEnd]
+        `INSERT INTO team_sponsors (team_id, sponsor_id, start_date, end_date, status)
+         VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 1 YEAR), 'active')`,
+        [teamId, sponsorId]
       );
-
-      // 인지도 보너스 적용
-      if (sponsorData.awarenessBonus > 0) {
-        await conn.query(
-          'UPDATE teams SET awareness = awareness + ? WHERE id = ?',
-          [sponsorData.awarenessBonus, teamId]
-        );
-      }
-
-      // 팬 보너스 적용
-      if (sponsorData.fanBonus > 0) {
-        await conn.query(
-          'UPDATE teams SET fans = fans + ? WHERE id = ?',
-          [sponsorData.fanBonus, teamId]
-        );
-      }
-
-      return { success: true };
+      
+      console.log(`스폰서 계약 완료: ${teamId} - ${sponsorId}`);
+      
+      return { success: true, sponsor };
+    } catch (error) {
+      console.error('스폰서 계약 오류:', error);
+      throw error;
     } finally {
-      conn.release();
+      if (conn) conn.release();
     }
   }
-
-  // 월별 스폰서 지원금 지급
-  static async processMonthlySponsorPayments(teamId) {
-    const conn = await pool.getConnection();
+  
+  // 월별 스폰서 후원금 지급
+  static async processMonthlySponsorship() {
+    let conn;
     try {
-      const sponsors = await conn.query(
-        'SELECT * FROM sponsors WHERE team_id = ? AND CURDATE() BETWEEN contract_start AND contract_end',
-        [teamId]
+      conn = await pool.getConnection();
+      
+      // 활성 스폰서 계약 조회
+      const contracts = await conn.query(
+        `SELECT ts.*, s.monthly_support, s.name as sponsor_name, t.id as team_id
+         FROM team_sponsors ts
+         JOIN sponsors s ON ts.sponsor_id = s.id
+         JOIN teams t ON ts.team_id = t.id
+         WHERE ts.status = 'active'`
       );
-
-      let totalSupport = 0;
-      for (const sponsor of sponsors) {
-        totalSupport += sponsor.monthly_support || 0;
-      }
-
-      if (totalSupport > 0) {
+      
+      for (const contract of contracts) {
+        // 후원금 지급
         await conn.query(
           'UPDATE teams SET money = money + ? WHERE id = ?',
-          [totalSupport, teamId]
+          [contract.monthly_support, contract.team_id]
         );
-
-        await conn.query(
-          `INSERT INTO financial_records (team_id, type, category, amount, description, record_date)
-           VALUES (?, 'INCOME', 'SPONSOR', ?, ?, CURDATE())`,
-          [teamId, totalSupport, `스폰서 지원금`]
-        );
+        
+        console.log(`스폰서 후원금 지급: ${contract.sponsor_name} -> 팀 ${contract.team_id} (${contract.monthly_support}원)`);
       }
-
-      return totalSupport;
+      
+      return { success: true, count: contracts.length };
+    } catch (error) {
+      console.error('스폰서 후원금 지급 오류:', error);
+      throw error;
     } finally {
-      conn.release();
-    }
-  }
-
-  // 승리 보너스 지급
-  static async processWinBonus(teamId) {
-    const conn = await pool.getConnection();
-    try {
-      const sponsors = await conn.query(
-        'SELECT win_bonus FROM sponsors WHERE team_id = ? AND CURDATE() BETWEEN contract_start AND contract_end',
-        [teamId]
-      );
-
-      let totalBonus = 0;
-      sponsors.forEach(s => {
-        totalBonus += s.win_bonus || 0;
-      });
-
-      if (totalBonus > 0) {
-        await conn.query(
-          'UPDATE teams SET money = money + ? WHERE id = ?',
-          [totalBonus, teamId]
-        );
-
-        await conn.query(
-          `INSERT INTO financial_records (team_id, type, category, amount, description, record_date)
-           VALUES (?, 'INCOME', 'SPONSOR_WIN_BONUS', ?, ?, CURDATE())`,
-          [teamId, totalBonus, `승리 보너스`]
-        );
-      }
-
-      return totalBonus;
-    } finally {
-      conn.release();
+      if (conn) conn.release();
     }
   }
 }
 
 module.exports = SponsorService;
-

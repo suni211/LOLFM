@@ -1,101 +1,125 @@
 const express = require('express');
 const router = express.Router();
-const PlayerService = require('../services/playerService');
 const pool = require('../database/pool');
 
-// 선수 목록 조회
-router.get('/team/:teamId', async (req, res) => {
+// 프리 에이전트 선수 목록 조회 (포지션별)
+router.get('/free-agents/:position', async (req, res) => {
+  let conn;
   try {
-    const { teamId } = req.params;
-    const conn = await pool.getConnection();
+    const { position } = req.params;
+    conn = await pool.getConnection();
+    
+    // 팀에 소속되지 않은 선수 2명 조회
     const players = await conn.query(
-      'SELECT * FROM players WHERE team_id = ?',
-      [teamId]
+      `SELECT * FROM players 
+       WHERE team_id IS NULL 
+       AND position = ? 
+       AND is_ai = TRUE
+       ORDER BY RAND()
+       LIMIT 2`,
+      [position]
     );
-    conn.release();
+    
     res.json(players);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('프리 에이전트 조회 오류:', error);
+    res.status(500).json({ error: '선수 조회 실패' });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
-// 선수 상세 정보
-router.get('/:playerId', async (req, res) => {
+// 팀 선수 목록 조회
+router.get('/team/:teamId', async (req, res) => {
+  let conn;
   try {
-    const { playerId } = req.params;
-    const conn = await pool.getConnection();
+    const { teamId } = req.params;
+    conn = await pool.getConnection();
+    
     const players = await conn.query(
+      'SELECT * FROM players WHERE team_id = ? ORDER BY position, overall DESC',
+      [teamId]
+    );
+    
+    res.json(players);
+  } catch (error) {
+    console.error('팀 선수 조회 오류:', error);
+    res.status(500).json({ error: '선수 조회 실패' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// 선수 영입
+router.post('/recruit', async (req, res) => {
+  let conn;
+  try {
+    const { playerId, teamId } = req.body;
+    
+    conn = await pool.getConnection();
+    
+    // 선수 정보 조회
+    const [player] = await conn.query(
       'SELECT * FROM players WHERE id = ?',
       [playerId]
     );
-    conn.release();
-    res.json(players[0] || null);
+    
+    if (!player || player.team_id) {
+      return res.status(400).json({ error: '이미 소속된 선수이거나 존재하지 않습니다.' });
+    }
+    
+    // 급여 계산 (overall에 따라)
+    const salary = player.overall * 100000; // overall * 10만원
+    
+    // 선수에 팀 배정 및 급여 설정
+    await conn.query(
+      `UPDATE players 
+       SET team_id = ?, salary = ?, contract_start = NOW(), contract_end = DATE_ADD(NOW(), INTERVAL 1 YEAR)
+       WHERE id = ?`,
+      [teamId, salary, playerId]
+    );
+    
+    res.json({ success: true, player: { ...player, salary } });
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 훈련 시작
-router.post('/:playerId/training', async (req, res) => {
-  try {
-    const { playerId } = req.params;
-    const { trainingType, focusStat } = req.body;
-    const result = await PlayerService.startTraining(playerId, trainingType, focusStat);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 선수 성장 처리
-router.post('/:playerId/growth', async (req, res) => {
-  try {
-    const { playerId } = req.params;
-    const result = await PlayerService.processPlayerGrowth(playerId);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('선수 영입 오류:', error);
+    res.status(500).json({ error: '선수 영입 실패' });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
 // 커스텀 선수 생성
 router.post('/custom', async (req, res) => {
+  let conn;
   try {
-    const { teamId, name, nationality, position, stats, potential } = req.body;
-    const conn = await pool.getConnection();
+    const { teamId, name, position, nationality } = req.body;
     
-    // 팀당 커스텀 선수 1명만 가능
-    const existing = await conn.query(
-      'SELECT COUNT(*) as count FROM players WHERE team_id = ? AND is_custom = TRUE',
-      [teamId]
-    );
+    conn = await pool.getConnection();
     
-    if (existing[0].count > 0) {
-      conn.release();
-      return res.status(400).json({ error: '이미 커스텀 선수가 있습니다.' });
-    }
-
+    // 커스텀 선수 생성
     const result = await conn.query(
-      `INSERT INTO players (name, nationality, position, team_id, is_custom, is_ai, 
-        mental, teamfight, laning, jungling, cs_skill, \`condition\`, leadership, 
-        will, competitiveness, dirty_play, potential, overall, age)
-       VALUES (?, ?, ?, ?, TRUE, FALSE, ?, ?, ?, ?, ?, 50, ?, ?, ?, ?, ?, ?, 18)`,
+      `INSERT INTO players (
+        team_id, name, position, nationality, overall, potential,
+        mental, teamfight, laning, jungling, cs_skill, \`condition\`,
+        leadership, will, competitiveness, dirty_play,
+        is_ai, is_custom, salary
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE, TRUE, ?)`,
       [
-        name, nationality, position, teamId,
-        stats.mental || 50, stats.teamfight || 50, stats.laning || 50,
-        stats.jungling || 50, stats.cs_skill || 50,
-        stats.leadership || 50, stats.will || 50,
-        stats.competitiveness || 50, stats.dirty_play || 50,
-        potential || 50, 50
+        teamId, name, position, nationality,
+        45, // initial overall
+        70, // potential
+        50, 50, 50, 50, 50, 100, 50, 60, 60, 30,
+        5000000 // 500만원
       ]
     );
-
-    conn.release();
+    
     res.json({ success: true, playerId: result.insertId });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('커스텀 선수 생성 오류:', error);
+    res.status(500).json({ error: '선수 생성 실패' });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
 module.exports = router;
-

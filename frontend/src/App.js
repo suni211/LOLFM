@@ -10,6 +10,7 @@ import TeamManagement from './components/TeamManagement';
 import LeagueStandings from './components/LeagueStandings';
 import Rankings from './components/Rankings';
 import TeamCreation from './components/TeamCreation';
+import PlayerSelection from './components/PlayerSelection';
 import Facilities from './components/Facilities';
 import Training from './components/Training';
 import Sponsors from './components/Sponsors';
@@ -21,16 +22,21 @@ import './App.css';
 function App() {
   const [user, setUser] = useState(null);
   const [team, setTeam] = useState(null);
+  const [needsPlayerSelection, setNeedsPlayerSelection] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // 사용자 정보 확인
     const checkUser = async () => {
+      console.log('사용자 확인 중...');
       const currentUser = await authService.getCurrentUser();
+      console.log('사용자 정보:', currentUser);
       setUser(currentUser);
       
       if (currentUser) {
         await loadTeam(currentUser);
+      } else {
+        console.log('로그인 필요');
       }
       
       setLoading(false);
@@ -43,13 +49,22 @@ function App() {
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const token = authService.getTokenValue();
+      console.log('팀 로드 시도:', currentUser.id);
       const response = await axios.get(`${API_URL}/teams/user/${currentUser.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
+      console.log('팀 정보:', response.data);
       setTeam(response.data);
     } catch (error) {
-      console.error('팀 로드 오류:', error);
-      setTeam(null);
+      console.log('팀 없음 - 팀 생성 필요');
+      if (error.response?.status === 404) {
+        // 팀이 없는 것은 정상 - 팀 생성 화면으로
+        setTeam(null);
+      } else {
+        console.error('팀 로드 오류:', error);
+        setTeam(null);
+      }
     }
   };
 
@@ -61,6 +76,11 @@ function App() {
 
   const handleTeamCreated = (newTeam) => {
     setTeam(newTeam);
+    setNeedsPlayerSelection(true);
+  };
+
+  const handlePlayerSelectionComplete = () => {
+    setNeedsPlayerSelection(false);
   };
 
   if (loading) {
@@ -82,6 +102,8 @@ function App() {
             <main className="main-content">
               {!team ? (
                 <TeamCreation user={user} onTeamCreated={handleTeamCreated} />
+              ) : needsPlayerSelection ? (
+                <PlayerSelection team={team} onComplete={handlePlayerSelectionComplete} />
               ) : (
                 <Routes>
                   <Route path="/" element={<Dashboard user={user} team={team} />} />
@@ -99,7 +121,10 @@ function App() {
             </main>
           </>
         ) : (
-          <Login />
+          <>
+            <UserCount />
+            <Login />
+          </>
         )}
       </div>
     </Router>

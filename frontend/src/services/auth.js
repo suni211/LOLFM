@@ -90,19 +90,25 @@ class AuthService {
   // 현재 사용자 정보 가져오기
   async getCurrentUser() {
     if (!this.token) {
+      console.log('토큰 없음 - 로그인 필요');
       this.user = null;
       return null;
     }
 
     try {
+      console.log('사용자 정보 조회 중...');
       const response = await axios.get(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${this.token}` }
+        headers: { Authorization: `Bearer ${this.token}` },
+        withCredentials: true
       });
+      console.log('현재 사용자:', response.data);
       this.user = response.data;
       return this.user;
     } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
       // 토큰이 유효하지 않으면 삭제
       if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('유효하지 않은 토큰 - 삭제');
         this.removeToken();
       }
       this.user = null;

@@ -83,6 +83,7 @@ function TeamCreation({ user, onTeamCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -91,19 +92,30 @@ function TeamCreation({ user, onTeamCreated }) {
       const formData = new FormData();
       formData.append('name', teamData.name);
       formData.append('abbreviation', teamData.abbreviation);
-      formData.append('user_id', user.id);
+      formData.append('region_id', selectedRegion.id);
       formData.append('league_id', selectedLeague.id);
+      formData.append('user_id', user.id);
       if (teamData.logo) {
         formData.append('logo', teamData.logo);
       }
+
+      console.log('팀 생성 요청:', {
+        name: teamData.name,
+        abbreviation: teamData.abbreviation,
+        region_id: selectedRegion.id,
+        league_id: selectedLeague.id,
+        user_id: user.id
+      });
 
       const response = await axios.post(`${API_URL}/teams`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        withCredentials: true
       });
 
+      console.log('팀 생성 완료:', response.data);
       onTeamCreated(response.data);
     } catch (error) {
       console.error('팀 생성 오류:', error);
