@@ -4,6 +4,7 @@ const upload = require('../middleware/upload');
 const pool = require('../database/pool');
 const path = require('path');
 const fs = require('fs');
+const LeagueService = require('../services/leagueService');
 
 // BigInt를 문자열로 변환하는 헬퍼 함수
 function convertBigInt(obj) {
@@ -85,7 +86,9 @@ router.post('/', upload.single('logo'), async (req, res) => {
       return res.status(400).json({ error: '이미 팀을 보유하고 있습니다.' });
     }
     
-    // 리그가 꽉 찼는지 확인
+    let teamId;
+    
+    // 리그가 선택되었는지 확인
     if (league_id) {
       const [league] = await conn.query(
         'SELECT max_teams FROM leagues WHERE id = ?',
@@ -97,69 +100,61 @@ router.post('/', upload.single('logo'), async (req, res) => {
         [league_id]
       );
       
-      if (teamCount[0].count >= league.max_teams) {
-        conn.release();
-        return res.status(400).json({ error: '선택한 리그가 이미 정원이 찼습니다.' });
-      }
-    }
-    
-    // 로고 경로 설정
-    const logoPath = req.file ? `/uploads/${req.file.filename}` : null;
-    
-    // 팀 생성
-    const result = await conn.query(
-      `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money)
-       VALUES (?, ?, ?, ?, ?, ?, 100000000)`,
-      [user_id, region_id, league_id || null, name, abbreviation, logoPath]
-    );
-    
-    const teamId = result.insertId;
-    console.log('팀 생성 완료:', teamId);
-    
-    // 포지션별로 2명씩 랜덤 AI 선수 배정
-    const positions = ['TOP', 'JGL', 'MID', 'ADC', 'SPT'];
-    const playerNames = {
-      TOP: ['김탑', '이탑', '박탑', '최탑', '정탑'],
-      JGL: ['김정글', '이정글', '박정글', '최정글', '정정글'],
-      MID: ['김미드', '이미드', '박미드', '최미드', '정미드'],
-      ADC: ['김원딜', '이원딜', '박원딜', '최원딜', '정원딜'],
-      SPT: ['김서폿', '이서폿', '박서폿', '최서폿', '정서폿']
-    };
-    
-    for (const position of positions) {
-      // 각 포지션당 2명 배정
-      for (let i = 0; i < 2; i++) {
-        const names = playerNames[position];
-        const name = names[Math.floor(Math.random() * names.length)] + (i + 1);
-        const overall = 40 + Math.floor(Math.random() * 20); // 40-60
-        const potential = 50 + Math.floor(Math.random() * 30); // 50-80
-        
-        await conn.query(
-          `INSERT INTO players (
-            team_id, name, position, nationality, overall, potential,
-            mental, teamfight, laning, jungling, cs_skill, \`condition\`,
-            leadership, will, competitiveness, dirty_play,
-            is_ai, salary
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?)`,
-          [
-            teamId, name, position, 'KR', overall, potential,
-            40 + Math.floor(Math.random() * 20), // mental
-            40 + Math.floor(Math.random() * 20), // teamfight
-            40 + Math.floor(Math.random() * 20), // laning
-            40 + Math.floor(Math.random() * 20), // jungling
-            40 + Math.floor(Math.random() * 20), // cs_skill
-            80 + Math.floor(Math.random() * 20), // condition
-            40 + Math.floor(Math.random() * 20), // leadership
-            50 + Math.floor(Math.random() * 30), // will
-            50 + Math.floor(Math.random() * 30), // competitiveness
-            10 + Math.floor(Math.random() * 20), // dirty_play
-            5000000 // salary (500만원)
-          ]
+      const currentTeams = teamCount[0].count;
+      const logoPath = req.file ? `/uploads/${req.file.filename}` : null;
+      
+      if (currentTeams >= league.max_teams) {
+        // 리그가 꽉 찼다면 AI 팀 대체
+        console.log('리그가 꽉 참 - AI 팀 대체');
+        const replaceResult = await LeagueService.replaceAITeamWithUser(
+          league_id, user_id, name, abbreviation, logoPath
         );
+        teamId = replaceResult.teamId;
+      } else {
+        // 리그에 자리가 있으면 일반 생성
+        console.log('리그에 자리 있음 - 팀 생성');
+        const result = await conn.query(
+          `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money, is_ai)
+           VALUES (?, ?, ?, ?, ?, ?, 100000000, FALSE)`,
+          [user_id, region_id, league_id, name, abbreviation, logoPath]
+        );
+        teamId = result.insertId;
+        
+        // 리그가 꽉 찼는지 다시 확인
+        const newTeamCount = await conn.query(
+          'SELECT COUNT(*) as count FROM teams WHERE league_id = ?',
+          [league_id]
+        );
+        
+        if (newTeamCount[0].count < league.max_teams) {
+          // 아직 꽉 안 찼다면 AI 팀으로 채우기
+          console.log('AI 팀으로 리그 채우기...');
+          await LeagueService.fillLeagueWithAITeams(league_id);
+        }
+        
+        // 리그가 꽉 찼으면 스케줄 생성
+        const finalTeamCount = await conn.query(
+          'SELECT COUNT(*) as count FROM teams WHERE league_id = ?',
+          [league_id]
+        );
+        
+        if (finalTeamCount[0].count >= league.max_teams) {
+          console.log('리그 꽉 참 - 스케줄 생성');
+          await LeagueService.generateLeagueSchedule(league_id);
+        }
       }
+    } else {
+      // 리그가 선택되지 않았을 때 (일반 팀 생성)
+      const logoPath = req.file ? `/uploads/${req.file.filename}` : null;
+      const result = await conn.query(
+        `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money, is_ai)
+         VALUES (?, ?, ?, ?, ?, ?, 100000000, FALSE)`,
+        [user_id, region_id, null, name, abbreviation, logoPath]
+      );
+      teamId = result.insertId;
     }
     
-    console.log('선수 배정 완료 (10명)');
+    console.log('팀 생성/대체 완료:', teamId);
     
     // 생성된 팀 정보 반환
     const [newTeam] = await conn.query(

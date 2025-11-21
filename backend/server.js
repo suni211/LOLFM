@@ -90,6 +90,7 @@ const transferMarketRoutes = require('./routes/transferMarket');
 const teamRoutes = require('./routes/teams');
 const regionsRoutes = require('./routes/regions');
 const leaguesRoutes = require('./routes/leagues');
+const facilitiesRoutes = require('./routes/facilities');
 
 app.use('/api/financial', financialRoutes);
 app.use('/api/players', playerRoutes);
@@ -102,6 +103,7 @@ app.use('/api/transfer-market', transferMarketRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/regions', regionsRoutes);
 app.use('/api/leagues', leaguesRoutes);
+app.use('/api/facilities', facilitiesRoutes);
 
 // Google OAuth 2.0 인증 URL 생성
 app.get('/api/auth/google', (req, res) => {

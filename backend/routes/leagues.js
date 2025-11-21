@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../database/pool');
+const LeagueService = require('../services/leagueService');
 
 // 지역별 리그 조회
 router.get('/region/:regionId', async (req, res) => {
@@ -73,6 +74,30 @@ router.get('/:leagueId', async (req, res) => {
     res.status(500).json({ error: '리그 조회 실패' });
   } finally {
     if (conn) conn.release();
+  }
+});
+
+// 리그에 AI 팀 채우기
+router.post('/:leagueId/fill-ai', async (req, res) => {
+  try {
+    const { leagueId } = req.params;
+    const result = await LeagueService.fillLeagueWithAITeams(leagueId);
+    res.json(result);
+  } catch (error) {
+    console.error('AI 팀 생성 오류:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 리그 스케줄 생성
+router.post('/:leagueId/generate-schedule', async (req, res) => {
+  try {
+    const { leagueId } = req.params;
+    const result = await LeagueService.generateLeagueSchedule(leagueId);
+    res.json(result);
+  } catch (error) {
+    console.error('스케줄 생성 오류:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
