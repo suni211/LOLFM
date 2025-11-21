@@ -37,7 +37,7 @@ router.post('/:playerId', async (req, res) => {
       [playerId, currentYear, currentMonth]
     );
     
-    if (lastTraining && lastTraining.length > 0) {
+    if (lastTraining && lastTraining.length > 0 && lastTraining[0]) {
       return res.status(400).json({ error: '이번 달에는 이미 훈련했습니다. 다음 달에 다시 시도해주세요.' });
     }
     

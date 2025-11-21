@@ -146,14 +146,32 @@ router.get('/league/:leagueId/standings', async (req, res) => {
     const [gameTime] = await conn.query('SELECT `current_year` FROM game_time WHERE id = 1');
     const seasonYear = gameTime.current_year || 2024;
     
-    const standings = await conn.query(
-      `SELECT ls.*, t.name as team_name, t.logo_path as team_logo
-       FROM league_standings ls
-       JOIN teams t ON ls.team_id = t.id
-       WHERE ls.league_id = ? AND ls.season_year = ?
-       ORDER BY ls.points DESC, ls.goal_difference DESC, ls.goals_for DESC`,
-      [leagueId, seasonYear]
-    );
+    // goals_for 컬럼이 있는지 확인
+    let standings;
+    try {
+      standings = await conn.query(
+        `SELECT ls.*, t.name as team_name, t.logo_path as team_logo
+         FROM league_standings ls
+         JOIN teams t ON ls.team_id = t.id
+         WHERE ls.league_id = ? AND ls.season_year = ?
+         ORDER BY ls.points DESC, ls.goal_difference DESC, COALESCE(ls.goals_for, 0) DESC`,
+        [leagueId, seasonYear]
+      );
+    } catch (error) {
+      // goals_for 컬럼이 없으면 기본 정렬만 사용
+      if (error.code === 'ER_BAD_FIELD_ERROR') {
+        standings = await conn.query(
+          `SELECT ls.*, t.name as team_name, t.logo_path as team_logo
+           FROM league_standings ls
+           JOIN teams t ON ls.team_id = t.id
+           WHERE ls.league_id = ? AND ls.season_year = ?
+           ORDER BY ls.points DESC, ls.goal_difference DESC`,
+          [leagueId, seasonYear]
+        );
+      } else {
+        throw error;
+      }
+    }
     
     // 순위 추가
     const standingsWithRank = standings.map((standing, index) => ({

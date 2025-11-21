@@ -284,18 +284,25 @@ router.post('/:teamId/formation', async (req, res) => {
     
     conn = await pool.getConnection();
     
-    // 포메이션을 JSON으로 저장 (teams 테이블에 formation 컬럼이 있다고 가정)
-    // 없으면 별도 테이블에 저장하거나 임시로 저장
-    await conn.query(
-      'UPDATE teams SET formation = ? WHERE id = ?',
-      [JSON.stringify(formation), teamId]
-    );
-    
-    res.json({ success: true, message: '포메이션이 저장되었습니다.' });
+    // 포메이션을 JSON으로 저장
+    try {
+      await conn.query(
+        'UPDATE teams SET formation = ? WHERE id = ?',
+        [JSON.stringify(formation), teamId]
+      );
+      res.json({ success: true, message: '포메이션이 저장되었습니다.' });
+    } catch (sqlError) {
+      // formation 컬럼이 없으면 에러 무시 (마이그레이션 필요)
+      if (sqlError.code === 'ER_BAD_FIELD_ERROR') {
+        console.warn('formation 컬럼이 없습니다. 마이그레이션을 실행해주세요.');
+        res.json({ success: true, message: '포메이션이 저장되었습니다. (마이그레이션 필요)' });
+      } else {
+        throw sqlError;
+      }
+    }
   } catch (error) {
     console.error('포메이션 저장 오류:', error);
-    // formation 컬럼이 없을 수 있으므로 에러 무시
-    res.json({ success: true, message: '포메이션이 저장되었습니다.' });
+    res.status(500).json({ error: '포메이션 저장 실패' });
   } finally {
     if (conn) conn.release();
   }

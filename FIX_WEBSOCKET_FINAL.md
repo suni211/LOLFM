@@ -102,8 +102,8 @@ curl http://localhost:5000/api/health
 ### 옵션 1: 프론트엔드를 Nginx로 서빙 (프로덕션 빌드)
 
 ```bash
-cd ~/LOLFM/frontend
-npm run build
+
+
 ```
 
 Nginx 설정에서:

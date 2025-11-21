@@ -233,7 +233,7 @@ location / {
     root /home/사용자명/LOLFM/frontend/build;
     try_files $uri $uri/ /index.html;
     index index.html;
-}
+}gi
 ```
 
 그리고 Nginx 재시작:

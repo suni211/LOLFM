@@ -33,9 +33,7 @@ mysql -u lolfm_user -p lolfm < backend/database/seed_players_international.sql
 git pull origin main
 
 # 4. 백엔드 재시작
-cd ~/LOLFM/backend
-npm install
-pm2 restart lolfm-backend
+w
 pm2 logs lolfm-backend --lines 50
 
 # 5. 프론트엔드 빌드 & 배포
@@ -53,7 +51,7 @@ pm2 status
 curl https://berrple.com
 ```
 
----
+---g
 
 ## 🎯 선수 시스템 세부사항
 

@@ -194,25 +194,51 @@ class MatchService {
       const homePoints = homeWins * 3 + homeDraws * 1;
       const homeGoalDiff = homeScore - awayScore;
       
-      await conn.query(
-        `INSERT INTO league_standings (
-          league_id, team_id, season_year, wins, losses, draws, 
-          points, goals_for, goals_against, goal_difference
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          wins = wins + ?,
-          losses = losses + ?,
-          draws = draws + ?,
-          points = points + ?,
-          goals_for = goals_for + ?,
-          goals_against = goals_against + ?,
-          goal_difference = goal_difference + ?`,
-        [
-          leagueId, homeTeamId, seasonYear, homeWins, homeLosses, homeDraws,
-          homePoints, homeScore, awayScore, homeGoalDiff,
-          homeWins, homeLosses, homeDraws, homePoints, homeScore, awayScore, homeGoalDiff
-        ]
-      );
+      // goals_for 컬럼이 있는지 확인하고 쿼리 실행
+      try {
+        await conn.query(
+          `INSERT INTO league_standings (
+            league_id, team_id, season_year, wins, losses, draws, 
+            points, goals_for, goals_against, goal_difference
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            wins = wins + ?,
+            losses = losses + ?,
+            draws = draws + ?,
+            points = points + ?,
+            goals_for = goals_for + ?,
+            goals_against = goals_against + ?,
+            goal_difference = goal_difference + ?`,
+          [
+            leagueId, homeTeamId, seasonYear, homeWins, homeLosses, homeDraws,
+            homePoints, homeScore, awayScore, homeGoalDiff,
+            homeWins, homeLosses, homeDraws, homePoints, homeScore, awayScore, homeGoalDiff
+          ]
+        );
+      } catch (error) {
+        // goals_for 컬럼이 없으면 기본 컬럼만 사용
+        if (error.code === 'ER_BAD_FIELD_ERROR') {
+          await conn.query(
+            `INSERT INTO league_standings (
+              league_id, team_id, season_year, wins, losses, draws, 
+              points, goal_difference
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              wins = wins + ?,
+              losses = losses + ?,
+              draws = draws + ?,
+              points = points + ?,
+              goal_difference = goal_difference + ?`,
+            [
+              leagueId, homeTeamId, seasonYear, homeWins, homeLosses, homeDraws,
+              homePoints, homeGoalDiff,
+              homeWins, homeLosses, homeDraws, homePoints, homeGoalDiff
+            ]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       // 원정팀 순위 업데이트
       const awayWins = awayScore > homeScore ? 1 : 0;
@@ -221,25 +247,51 @@ class MatchService {
       const awayPoints = awayWins * 3 + awayDraws * 1;
       const awayGoalDiff = awayScore - homeScore;
       
-      await conn.query(
-        `INSERT INTO league_standings (
-          league_id, team_id, season_year, wins, losses, draws, 
-          points, goals_for, goals_against, goal_difference
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          wins = wins + ?,
-          losses = losses + ?,
-          draws = draws + ?,
-          points = points + ?,
-          goals_for = goals_for + ?,
-          goals_against = goals_against + ?,
-          goal_difference = goal_difference + ?`,
-        [
-          leagueId, awayTeamId, seasonYear, awayWins, awayLosses, awayDraws,
-          awayPoints, awayScore, homeScore, awayGoalDiff,
-          awayWins, awayLosses, awayDraws, awayPoints, awayScore, homeScore, awayGoalDiff
-        ]
-      );
+      // goals_for 컬럼이 있는지 확인하고 쿼리 실행
+      try {
+        await conn.query(
+          `INSERT INTO league_standings (
+            league_id, team_id, season_year, wins, losses, draws, 
+            points, goals_for, goals_against, goal_difference
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            wins = wins + ?,
+            losses = losses + ?,
+            draws = draws + ?,
+            points = points + ?,
+            goals_for = goals_for + ?,
+            goals_against = goals_against + ?,
+            goal_difference = goal_difference + ?`,
+          [
+            leagueId, awayTeamId, seasonYear, awayWins, awayLosses, awayDraws,
+            awayPoints, awayScore, homeScore, awayGoalDiff,
+            awayWins, awayLosses, awayDraws, awayPoints, awayScore, homeScore, awayGoalDiff
+          ]
+        );
+      } catch (error) {
+        // goals_for 컬럼이 없으면 기본 컬럼만 사용
+        if (error.code === 'ER_BAD_FIELD_ERROR') {
+          await conn.query(
+            `INSERT INTO league_standings (
+              league_id, team_id, season_year, wins, losses, draws, 
+              points, goal_difference
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              wins = wins + ?,
+              losses = losses + ?,
+              draws = draws + ?,
+              points = points + ?,
+              goal_difference = goal_difference + ?`,
+            [
+              leagueId, awayTeamId, seasonYear, awayWins, awayLosses, awayDraws,
+              awayPoints, awayGoalDiff,
+              awayWins, awayLosses, awayDraws, awayPoints, awayGoalDiff
+            ]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       // 순위 재계산
       await this.recalculateRanks(conn, leagueId, seasonYear);
@@ -253,12 +305,27 @@ class MatchService {
   static async recalculateRanks(conn, leagueId, seasonYear) {
     try {
       // 모든 팀의 순위 데이터 조회
-      const standings = await conn.query(
-        `SELECT * FROM league_standings 
-         WHERE league_id = ? AND season_year = ?
-         ORDER BY points DESC, goal_difference DESC, goals_for DESC`,
-        [leagueId, seasonYear]
-      );
+      let standings;
+      try {
+        standings = await conn.query(
+          `SELECT * FROM league_standings 
+           WHERE league_id = ? AND season_year = ?
+           ORDER BY points DESC, goal_difference DESC, COALESCE(goals_for, 0) DESC`,
+          [leagueId, seasonYear]
+        );
+      } catch (error) {
+        // goals_for 컬럼이 없으면 기본 정렬만 사용
+        if (error.code === 'ER_BAD_FIELD_ERROR') {
+          standings = await conn.query(
+            `SELECT * FROM league_standings 
+             WHERE league_id = ? AND season_year = ?
+             ORDER BY points DESC, goal_difference DESC`,
+            [leagueId, seasonYear]
+          );
+        } else {
+          throw error;
+        }
+      }
       
       // 순위 업데이트
       for (let i = 0; i < standings.length; i++) {
