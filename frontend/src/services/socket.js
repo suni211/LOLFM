@@ -107,7 +107,19 @@ class SocketService {
 
     this.socket.on('connect_error', (error) => {
       console.error('Socket.IO 연결 오류:', error);
+      console.error('연결 시도 URL:', socketUrl);
       this.emit('socketError', error);
+      
+      // WebSocket 실패 시 polling으로 폴백
+      if (this.socket && !this.isConnected) {
+        console.log('WebSocket 실패, polling으로 재시도...');
+        setTimeout(() => {
+          if (this.socket && !this.isConnected) {
+            this.socket.io.opts.transports = ['polling', 'websocket'];
+            this.socket.connect();
+          }
+        }, 2000);
+      }
     });
   }
 

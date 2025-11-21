@@ -1,9 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const NotificationService = require('../services/notificationService');
-const pool = require('../database/pool');
-
-// 인증 미들웨어 (server.js와 동일한 로직)
 const AuthService = require('../services/authService');
 const pool = require('../database/pool');
 
