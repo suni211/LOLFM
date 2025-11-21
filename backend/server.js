@@ -4,9 +4,7 @@ const dotenv = require('dotenv');
 const mariadb = require('mariadb');
 const http = require('http');
 const { Server } = require('socket.io');
-const session = require('express-session');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const AuthService = require('./services/authService');
 
 dotenv.config();
 
@@ -21,18 +19,6 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 5000;
 
-// 세션 설정
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'lolfm-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false } // HTTPS 사용 시 true로 변경
-}));
-
-// Passport 초기화
-app.use(passport.initialize());
-app.use(passport.session());
-
 // 미들웨어
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -40,6 +26,10 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 쿠키 파서
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 // IP 추출 미들웨어
 app.use((req, res, next) => {
@@ -57,6 +47,36 @@ const pool = mariadb.createPool({
   database: process.env.DB_NAME || 'lolfm',
   connectionLimit: 5
 });
+
+// JWT 인증 미들웨어 (pool 생성 후)
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: '인증 토큰이 필요합니다.' });
+  }
+
+  const decoded = AuthService.verifyToken(token);
+  if (!decoded) {
+    return res.status(403).json({ error: '유효하지 않은 토큰입니다.' });
+  }
+
+  // 사용자 정보를 req.user에 추가
+  const conn = await pool.getConnection();
+  try {
+    const users = await conn.query('SELECT * FROM users WHERE id = ?', [decoded.id]);
+    if (users.length === 0) {
+      return res.status(403).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+    req.user = users[0];
+    next();
+  } catch (error) {
+    return res.status(500).json({ error: '인증 처리 중 오류가 발생했습니다.' });
+  } finally {
+    conn.release();
+  }
+};
 
 // 데이터베이스 연결 테스트
 pool.getConnection()
@@ -93,86 +113,67 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/transfer-market', transferMarketRoutes);
 app.use('/api/teams', teamRoutes);
 
-// 구글 OAuth 전략 설정
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback'
-}, async (accessToken, refreshToken, profile, done) => {
+// Google OAuth 2.0 인증 URL 생성
+app.get('/api/auth/google', (req, res) => {
   try {
-    // 사용자 정보를 데이터베이스에 저장하거나 조회
-    const conn = await pool.getConnection();
-    let user = await conn.query(
-      'SELECT * FROM users WHERE google_id = ?',
-      [profile.id]
-    );
-    
-    if (user.length === 0) {
-      // 새 사용자 생성
-      await conn.query(
-        `INSERT INTO users (google_id, email, name, picture, created_at) 
-         VALUES (?, ?, ?, ?, NOW())`,
-        [profile.id, profile.emails[0].value, profile.displayName, profile.photos[0].value]
-      );
-      user = await conn.query(
-        'SELECT * FROM users WHERE google_id = ?',
-        [profile.id]
-      );
-    }
-    
-    conn.release();
-    return done(null, user[0]);
+    const { authUrl, state } = AuthService.getGoogleAuthUrl();
+    // state를 세션이나 쿠키에 저장 (CSRF 방지)
+    res.cookie('oauth_state', state, { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 600000 // 10분
+    });
+    res.json({ authUrl });
   } catch (error) {
-    return done(error, null);
+    res.status(500).json({ error: '인증 URL 생성 실패' });
   }
-}));
-
-// Passport 직렬화
-passport.serializeUser((user, done) => {
-  done(null, user.id);
 });
 
-passport.deserializeUser(async (id, done) => {
+// Google OAuth 2.0 콜백 처리
+app.get('/api/auth/google/callback', async (req, res) => {
   try {
-    const conn = await pool.getConnection();
-    const users = await conn.query('SELECT * FROM users WHERE id = ?', [id]);
-    conn.release();
-    done(null, users[0]);
-  } catch (error) {
-    done(error, null);
-  }
-});
+    const { code, state } = req.query;
+    const storedState = req.cookies.oauth_state;
 
-// 구글 OAuth 라우트
-app.get('/api/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-app.get('/api/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  (req, res) => {
-    // 성공 시 프론트엔드로 리다이렉트
-    res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
-  }
-);
-
-// 로그아웃
-app.get('/api/auth/logout', (req, res) => {
-  req.logout((err) => {
-    if (err) {
-      return res.status(500).json({ error: '로그아웃 실패' });
+    // State 검증 (CSRF 방지)
+    if (!state || state !== storedState) {
+      return res.status(400).json({ error: '유효하지 않은 요청입니다.' });
     }
-    res.json({ message: '로그아웃 성공' });
-  });
+
+    // 인증 코드를 액세스 토큰으로 교환
+    const tokenData = await AuthService.exchangeCodeForToken(code);
+    
+    // 사용자 정보 가져오기
+    const googleUserInfo = await AuthService.getGoogleUserInfo(tokenData.access_token);
+    
+    // 사용자 생성 또는 조회
+    const user = await AuthService.findOrCreateUser(googleUserInfo);
+    
+    // JWT 토큰 생성
+    const jwtToken = AuthService.generateToken(user);
+
+    // State 쿠키 삭제
+    res.clearCookie('oauth_state');
+
+    // 프론트엔드로 리다이렉트 (토큰 포함)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}?token=${jwtToken}`);
+  } catch (error) {
+    console.error('OAuth 콜백 오류:', error);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}?error=인증 실패`);
+  }
 });
 
-// 현재 사용자 정보
-app.get('/api/auth/me', (req, res) => {
-  if (req.user) {
-    res.json(req.user);
-  } else {
-    res.status(401).json({ error: '인증되지 않음' });
-  }
+// 현재 사용자 정보 (JWT 토큰 필요)
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json(req.user);
+});
+
+// 로그아웃 (클라이언트에서 토큰 삭제)
+app.post('/api/auth/logout', (req, res) => {
+  res.json({ message: '로그아웃 성공' });
 });
 
 // Socket.IO 연결 관리
@@ -246,8 +247,9 @@ const checkGameOver = async (req, res, next) => {
   next();
 };
 
-// 게임오버 체크를 필요한 라우트에 적용
-app.use('/api/financial', checkGameOver);
+// 게임오버 체크를 필요한 라우트에 적용 (인증된 사용자만)
+app.use('/api/financial', authenticateToken, checkGameOver);
+app.use('/api/teams', authenticateToken, checkGameOver);
 // TODO: 다른 중요한 라우트에도 적용
 
 // 서버 시작

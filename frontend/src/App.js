@@ -75,7 +75,10 @@ function Home({ user }) {
   const loadTeam = async () => {
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await axios.get(`${API_URL}/teams/user/${user.id}`, { withCredentials: true });
+      const token = authService.getTokenValue();
+      const response = await axios.get(`${API_URL}/teams/user/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTeam(response.data);
       setLoading(false);
     } catch (error) {
