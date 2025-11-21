@@ -83,6 +83,8 @@ const rankingRoutes = require('./routes/rankings');
 const notificationRoutes = require('./routes/notifications');
 const transferMarketRoutes = require('./routes/transferMarket');
 const teamRoutes = require('./routes/teams');
+const regionsRoutes = require('./routes/regions');
+const leaguesRoutes = require('./routes/leagues');
 
 app.use('/api/financial', financialRoutes);
 app.use('/api/players', playerRoutes);
@@ -93,6 +95,8 @@ app.use('/api/rankings', rankingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/transfer-market', transferMarketRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/regions', regionsRoutes);
+app.use('/api/leagues', leaguesRoutes);
 
 // Google OAuth 2.0 인증 URL 생성
 app.get('/api/auth/google', (req, res) => {

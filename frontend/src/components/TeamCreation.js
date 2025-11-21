@@ -27,11 +27,14 @@ function TeamCreation({ user, onTeamCreated }) {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const token = authService.getTokenValue();
       const response = await axios.get(`${API_URL}/regions`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
+      console.log('지역 데이터:', response.data);
       setRegions(response.data);
     } catch (error) {
       console.error('지역 로드 오류:', error);
+      setError('지역 정보를 불러올 수 없습니다.');
     }
   };
 
@@ -41,11 +44,14 @@ function TeamCreation({ user, onTeamCreated }) {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const token = authService.getTokenValue();
       const response = await axios.get(`${API_URL}/leagues/region/${region.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       });
+      console.log('리그 데이터:', response.data);
       setLeagues(response.data);
     } catch (error) {
       console.error('리그 로드 오류:', error);
+      setError('리그 정보를 불러올 수 없습니다.');
     }
   };
 
@@ -125,22 +131,28 @@ function TeamCreation({ user, onTeamCreated }) {
           <p className="creation-subtitle">팀이 참가할 리그를 선택하세요</p>
         </div>
 
+        {error && <div className="error-message">{error}</div>}
+
         {!selectedRegion ? (
           <div className="region-grid">
-            {regions.map(region => (
-              <div
-                key={region.id}
-                className="region-card"
-                onClick={() => handleRegionSelect(region)}
-              >
-                <div className="region-icon">{getRegionIcon(region.code)}</div>
-                <div className="region-info">
-                  <h3 className="region-name">{region.full_name}</h3>
-                  <p className="region-code">{region.code}</p>
+            {regions.length === 0 ? (
+              <div className="loading-message">지역 정보를 불러오는 중...</div>
+            ) : (
+              regions.map(region => (
+                <div
+                  key={region.id}
+                  className="region-card"
+                  onClick={() => handleRegionSelect(region)}
+                >
+                  <div className="region-icon">{getRegionIcon(region.code)}</div>
+                  <div className="region-info">
+                    <h3 className="region-name">{region.full_name}</h3>
+                    <p className="region-code">{region.code}</p>
+                  </div>
+                  <div className="region-arrow">→</div>
                 </div>
-                <div className="region-arrow">→</div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         ) : (
           <div className="league-selection">
