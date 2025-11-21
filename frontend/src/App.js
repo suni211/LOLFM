@@ -114,7 +114,7 @@ function App() {
                   <Route path="/finances" element={<Finances team={team} />} />
                   <Route path="/transfer-market" element={<TransferMarket team={team} />} />
                   <Route path="/statistics" element={<Statistics team={team} />} />
-                  <Route path="/league-standings" element={<LeagueStandings />} />
+                  <Route path="/league-standings" element={<LeagueStandings leagueId={team.league_id} />} />
                   <Route path="/rankings" element={<Rankings />} />
                 </Routes>
               )}

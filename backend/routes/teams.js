@@ -113,12 +113,25 @@ router.post('/', upload.single('logo'), async (req, res) => {
       } else {
         // 리그에 자리가 있으면 일반 생성
         console.log('리그에 자리 있음 - 팀 생성');
-        const result = await conn.query(
-          `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money, is_ai)
-           VALUES (?, ?, ?, ?, ?, ?, 100000000, FALSE)`,
-          [user_id, region_id, league_id, name, abbreviation, logoPath]
-        );
-        teamId = result.insertId;
+        // is_ai 컬럼이 있는지 확인
+        const columns = await conn.query('SHOW COLUMNS FROM teams LIKE "is_ai"');
+        const hasIsAi = columns.length > 0;
+        
+        if (hasIsAi) {
+          const result = await conn.query(
+            `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money, is_ai)
+             VALUES (?, ?, ?, ?, ?, ?, 100000000, FALSE)`,
+            [user_id, region_id, league_id, name, abbreviation, logoPath]
+          );
+          teamId = result.insertId;
+        } else {
+          const result = await conn.query(
+            `INSERT INTO teams (user_id, region_id, league_id, name, abbreviation, logo_path, money)
+             VALUES (?, ?, ?, ?, ?, ?, 100000000)`,
+            [user_id, region_id, league_id, name, abbreviation, logoPath]
+          );
+          teamId = result.insertId;
+        }
         
         // 리그가 꽉 찼는지 다시 확인
         const newTeamCount = await conn.query(
