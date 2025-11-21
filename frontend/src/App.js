@@ -17,6 +17,7 @@ import Sponsors from './components/Sponsors';
 import Finances from './components/Finances';
 import TransferMarket from './components/TransferMarket';
 import Statistics from './components/Statistics';
+import PlayerDetail from './components/PlayerDetail';
 import './App.css';
 
 function App() {
@@ -116,6 +117,7 @@ function App() {
                   <Route path="/statistics" element={<Statistics team={team} />} />
                   <Route path="/league-standings" element={<LeagueStandings leagueId={team.league_id} />} />
                   <Route path="/rankings" element={<Rankings />} />
+                  <Route path="/players/:playerId" element={<PlayerDetail />} />
                 </Routes>
               )}
             </main>

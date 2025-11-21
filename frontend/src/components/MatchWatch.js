@@ -159,6 +159,46 @@ function MatchWatch({ matchId, onClose }) {
             </div>
           </div>
         )}
+
+        {match.status === 'completed' && (
+          <div className="match-highlights">
+            <h3 className="highlights-title">경기 하이라이트</h3>
+            <div className="highlights-list">
+              {match.home_score > 0 && (
+                <div className="highlight-item">
+                  <span className="highlight-icon">⚡</span>
+                  <div className="highlight-text">
+                    <strong>{match.home_team_name}</strong>이(가) {match.home_score}번째 게임에서 승리했습니다!
+                  </div>
+                </div>
+              )}
+              {match.away_score > 0 && (
+                <div className="highlight-item">
+                  <span className="highlight-icon">⚡</span>
+                  <div className="highlight-text">
+                    <strong>{match.away_team_name}</strong>이(가) {match.away_score}번째 게임에서 승리했습니다!
+                  </div>
+                </div>
+              )}
+              {match.home_score === 2 && (
+                <div className="highlight-item victory">
+                  <span className="highlight-icon">🏆</span>
+                  <div className="highlight-text">
+                    <strong>{match.home_team_name}</strong>이(가) 시리즈를 2-{match.away_score}로 승리했습니다!
+                  </div>
+                </div>
+              )}
+              {match.away_score === 2 && (
+                <div className="highlight-item victory">
+                  <span className="highlight-icon">🏆</span>
+                  <div className="highlight-text">
+                    <strong>{match.away_team_name}</strong>이(가) 시리즈를 2-{match.home_score}로 승리했습니다!
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

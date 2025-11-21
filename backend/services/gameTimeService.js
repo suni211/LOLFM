@@ -69,6 +69,17 @@ class GameTimeService {
         }
       }
 
+      // 이번 달 예정된 경기 자동 진행
+      await this.processScheduledMatches(conn, newYear, newMonth);
+      
+      // 랜덤 이벤트 체크
+      const EventService = require('./eventService');
+      await EventService.checkMonthlyEvents();
+      
+      // 부상 회복 체크
+      const InjuryService = require('./injuryService');
+      await InjuryService.checkRecovery();
+
       await conn.commit();
 
       return {
@@ -114,6 +125,38 @@ class GameTimeService {
       results.push(result);
     }
     return results;
+  }
+
+  // 예정된 경기 자동 진행
+  static async processScheduledMatches(conn, year, month) {
+    try {
+      const MatchService = require('./matchService');
+      
+      // 이번 달 예정된 경기 조회
+      const matches = await conn.query(
+        `SELECT * FROM matches 
+         WHERE status = 'scheduled' 
+         AND YEAR(match_date) = ? 
+         AND MONTH(match_date) = ?
+         ORDER BY match_date ASC`,
+        [year, month]
+      );
+      
+      console.log(`📅 ${year}년 ${month}월 예정된 경기: ${matches.length}경기`);
+      
+      // 각 경기 시뮬레이션
+      for (const match of matches) {
+        try {
+          await MatchService.simulateMatch(match.id);
+          console.log(`✅ 경기 ${match.id} 완료: ${match.home_team_id} vs ${match.away_team_id}`);
+        } catch (error) {
+          console.error(`❌ 경기 ${match.id} 시뮬레이션 오류:`, error);
+          // 개별 경기 실패해도 계속 진행
+        }
+      }
+    } catch (error) {
+      console.error('경기 자동 진행 오류:', error);
+    }
   }
 }
 

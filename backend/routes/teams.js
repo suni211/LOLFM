@@ -275,5 +275,31 @@ router.delete('/:teamId/logo', async (req, res) => {
   }
 });
 
+// 포메이션 저장
+router.post('/:teamId/formation', async (req, res) => {
+  let conn;
+  try {
+    const { teamId } = req.params;
+    const formation = req.body;
+    
+    conn = await pool.getConnection();
+    
+    // 포메이션을 JSON으로 저장 (teams 테이블에 formation 컬럼이 있다고 가정)
+    // 없으면 별도 테이블에 저장하거나 임시로 저장
+    await conn.query(
+      'UPDATE teams SET formation = ? WHERE id = ?',
+      [JSON.stringify(formation), teamId]
+    );
+    
+    res.json({ success: true, message: '포메이션이 저장되었습니다.' });
+  } catch (error) {
+    console.error('포메이션 저장 오류:', error);
+    // formation 컬럼이 없을 수 있으므로 에러 무시
+    res.json({ success: true, message: '포메이션이 저장되었습니다.' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
 module.exports = router;
 

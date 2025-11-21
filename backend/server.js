@@ -93,8 +93,10 @@ const leaguesRoutes = require('./routes/leagues');
 const facilitiesRoutes = require('./routes/facilities');
 const gameTimeRoutes = require('./routes/gameTime');
 const trainingRoutes = require('./routes/training');
+const statisticsRoutes = require('./routes/statistics');
 
 app.use('/api/financial', financialRoutes);
+app.use('/api/statistics', statisticsRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/sponsors', sponsorRoutes);

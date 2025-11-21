@@ -169,6 +169,10 @@ router.post('/:teamId/upgrade', async (req, res) => {
           [upgradeCost, teamId]
         );
         
+        // 업그레이드 완료 알림
+        const NotificationService = require('../services/notificationService');
+        await NotificationService.createFacilityUpgradeCompleteNotification(teamId, '경기장', newLevel);
+        
         return res.json({ success: true, message: '경기장 업그레이드가 완료되었습니다.', newLevel });
         
       case 'dormitory':
@@ -204,6 +208,10 @@ router.post('/:teamId/upgrade', async (req, res) => {
           'UPDATE teams SET money = money - ? WHERE id = ?',
           [upgradeCost, teamId]
         );
+        
+        // 업그레이드 완료 알림
+        const NotificationService = require('../services/notificationService');
+        await NotificationService.createFacilityUpgradeCompleteNotification(teamId, '숙소', newDormLevel);
         
         return res.json({ success: true, message: '숙소 업그레이드가 완료되었습니다.', newLevel: newDormLevel });
         
@@ -256,6 +264,19 @@ router.post('/:teamId/upgrade', async (req, res) => {
         await conn.query(
           'UPDATE teams SET money = money - ? WHERE id = ?',
           [upgradeCost, teamId]
+        );
+        
+        // 업그레이드 완료 알림
+        const NotificationService = require('../services/notificationService');
+        const facilityNames = {
+          training: '훈련장',
+          medical: '의료실',
+          media: '미디어실'
+        };
+        await NotificationService.createFacilityUpgradeCompleteNotification(
+          teamId, 
+          facilityNames[facilityType] || '시설', 
+          newFacilityLevel
         );
         
         return res.json({ success: true, message: '시설 업그레이드가 완료되었습니다.', newLevel: newFacilityLevel });

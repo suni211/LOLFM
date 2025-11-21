@@ -1,0 +1,275 @@
+.player-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.player-detail-loading {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  font-size: 1.2rem;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.back-btn {
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  color: #00ff88;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  background: rgba(0, 255, 136, 0.2);
+  transform: translateX(-3px);
+}
+
+.player-title {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.player-info-card {
+  background: linear-gradient(135deg, #1a1f23 0%, #0f1215 100%);
+  border: 2px solid rgba(0, 255, 136, 0.2);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.player-basic-info {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid rgba(0, 255, 136, 0.1);
+}
+
+.player-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6f 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 900;
+  color: #0a0e0f;
+  border: 4px solid rgba(0, 255, 136, 0.3);
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-name {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #e0e0e0;
+  margin-bottom: 1rem;
+}
+
+.player-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.position-badge {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6f 100%);
+  color: #0a0e0f;
+  padding: 0.3rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.nationality, .age {
+  color: #b0b0b0;
+  font-size: 0.9rem;
+  padding: 0.3rem 1rem;
+  background: rgba(0, 255, 136, 0.05);
+  border-radius: 20px;
+}
+
+.player-overall {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.overall-label {
+  color: #888;
+  font-size: 1rem;
+}
+
+.overall-value {
+  color: #00ff88;
+  font-size: 2.5rem;
+  font-weight: 900;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.player-contract h3 {
+  color: #00ff88;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.contract-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  color: #b0b0b0;
+}
+
+.stats-section, .training-history-section, .match-stats-section {
+  background: linear-gradient(135deg, #1a1f23 0%, #0f1215 100%);
+  border: 2px solid rgba(0, 255, 136, 0.2);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  color: #00ff88;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.1);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #b0b0b0;
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.stat-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 255, 136, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stat-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff88 0%, #00cc6f 100%);
+  transition: width 0.3s ease;
+}
+
+.training-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.training-item {
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.training-type {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.training-date {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.training-increase {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.stat-card {
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 10px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.stat-card-label {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card-value {
+  color: #00ff88;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.error {
+  text-align: center;
+  padding: 3rem;
+  color: #ff3b3b;
+  font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+  .player-basic-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

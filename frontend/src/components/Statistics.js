@@ -54,7 +54,7 @@ function Statistics({ team }) {
   return (
     <div className="statistics">
       <div className="page-header">
-        <h1 className="page-title">통계 및 기록</h1>
+        <h1 className="page-title">📊 통계 및 기록</h1>
         <p className="page-subtitle">팀과 선수들의 성적을 확인하세요</p>
       </div>
 

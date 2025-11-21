@@ -83,5 +83,40 @@ router.get('/bankruptcy-history/:teamId', async (req, res) => {
   }
 });
 
+// 재정 요약
+router.get('/summary/:teamId', async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const pool = require('../database/pool');
+    const conn = await pool.getConnection();
+    
+    // 팀 정보
+    const [team] = await conn.query('SELECT money FROM teams WHERE id = ?', [teamId]);
+    
+    // 월별 수입 계산
+    const [sponsor] = await conn.query(
+      'SELECT monthly_support FROM sponsors WHERE team_id = ? AND CURDATE() BETWEEN contract_start AND contract_end',
+      [teamId]
+    );
+    const sponsorIncome = sponsor?.monthly_support || 0;
+    
+    // 월별 지출 계산
+    const maintenance = await FinancialService.calculateMonthlyMaintenance(teamId);
+    const totalExpense = maintenance.total || 0;
+    
+    conn.release();
+    
+    res.json({
+      current_money: team.money,
+      monthly_income: sponsorIncome,
+      monthly_expense: totalExpense,
+      net_income: sponsorIncome - totalExpense
+    });
+  } catch (error) {
+    console.error('재정 요약 조회 오류:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
 

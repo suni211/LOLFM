@@ -90,6 +90,24 @@ class MatchService {
       await this.updateTeamStats(conn, match.home_team_id, homeScore > awayScore, homeScore === awayScore);
       await this.updateTeamStats(conn, match.away_team_id, awayScore > homeScore, homeScore === awayScore);
       
+      // 경기 결과 알림
+      const NotificationService = require('./notificationService');
+      const [homeTeam] = await conn.query('SELECT name FROM teams WHERE id = ?', [match.home_team_id]);
+      const [awayTeam] = await conn.query('SELECT name FROM teams WHERE id = ?', [match.away_team_id]);
+      
+      await NotificationService.createMatchResultNotification(
+        match.home_team_id,
+        homeScore > awayScore,
+        awayTeam.name,
+        `${homeScore}-${awayScore}`
+      );
+      await NotificationService.createMatchResultNotification(
+        match.away_team_id,
+        awayScore > homeScore,
+        homeTeam.name,
+        `${awayScore}-${homeScore}`
+      );
+      
       await conn.commit();
       
       return {

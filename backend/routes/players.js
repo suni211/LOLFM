@@ -206,4 +206,97 @@ router.post('/custom', async (req, res) => {
   }
 });
 
+// 선수 상세 정보 조회
+router.get('/:playerId', async (req, res) => {
+  let conn;
+  try {
+    const { playerId } = req.params;
+    conn = await pool.getConnection();
+    
+    const [player] = await conn.query(
+      `SELECT id, name, position, nationality, age, overall, 
+       mental, teamfight, laning, jungling, cs_skill, \`condition\`,
+       leadership, will, competitiveness, dirty_play, salary, 
+       contract_start, contract_end, team_id, is_ai, is_custom
+       FROM players WHERE id = ?`,
+      [playerId]
+    );
+    
+    if (!player) {
+      return res.status(404).json({ error: '선수를 찾을 수 없습니다.' });
+    }
+    
+    res.json(convertBigInt(player));
+  } catch (error) {
+    console.error('선수 상세 조회 오류:', error);
+    res.status(500).json({ error: '선수 조회 실패' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// 선수 경기 통계 조회
+router.get('/:playerId/stats', async (req, res) => {
+  let conn;
+  try {
+    const { playerId } = req.params;
+    conn = await pool.getConnection();
+    
+    // 임시 통계 (나중에 player_statistics 테이블에서 가져오기)
+    res.json({
+      total_matches: 0,
+      win_rate: 0,
+      avg_kda: 0
+    });
+  } catch (error) {
+    console.error('선수 통계 조회 오류:', error);
+    res.status(500).json({ error: '통계 조회 실패' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// 선수 방출
+router.post('/:playerId/release', async (req, res) => {
+  let conn;
+  try {
+    const { playerId } = req.params;
+    conn = await pool.getConnection();
+    
+    // 선수 정보 조회
+    const [player] = await conn.query('SELECT * FROM players WHERE id = ?', [playerId]);
+    
+    if (!player || !player.team_id) {
+      return res.status(404).json({ error: '선수를 찾을 수 없습니다.' });
+    }
+    
+    // 선수 방출 (team_id를 NULL로)
+    await conn.query(
+      'UPDATE players SET team_id = NULL, salary = 0, contract_start = NULL, contract_end = NULL WHERE id = ?',
+      [playerId]
+    );
+    
+    res.json({ success: true, message: '선수가 방출되었습니다.' });
+  } catch (error) {
+    console.error('선수 방출 오류:', error);
+    res.status(500).json({ error: '선수 방출 실패' });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// BigInt 변환 헬퍼
+function convertBigInt(obj) {
+  if (!obj) return null;
+  const result = {};
+  for (let key in obj) {
+    if (typeof obj[key] === 'bigint') {
+      result[key] = obj[key].toString();
+    } else {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
+
 module.exports = router;

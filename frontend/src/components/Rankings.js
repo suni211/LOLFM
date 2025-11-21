@@ -62,7 +62,10 @@ function Rankings() {
 
   return (
     <div className="rankings">
-      <h2>랭킹</h2>
+      <div className="page-header">
+        <h1 className="page-title">🏆 랭킹</h1>
+        <p className="page-subtitle">전체 팀 순위를 확인하세요</p>
+      </div>
       <div className="ranking-tabs">
         <button 
           className={activeTab === 'money' ? 'active' : ''}

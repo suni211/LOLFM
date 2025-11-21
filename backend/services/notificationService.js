@@ -98,6 +98,66 @@ class NotificationService {
       conn.release();
     }
   }
+
+  // 경기 결과 알림
+  static async createMatchResultNotification(teamId, isWin, opponent, score) {
+    const conn = await pool.getConnection();
+    try {
+      const team = await conn.query('SELECT user_id FROM teams WHERE id = ?', [teamId]);
+      if (team.length === 0) return;
+
+      await this.createNotification(
+        team[0].user_id,
+        teamId,
+        'MATCH_RESULT',
+        isWin ? '경기 승리!' : '경기 패배',
+        `${opponent}와의 경기에서 ${isWin ? '승리' : '패배'}했습니다. (${score})`,
+        'MEDIUM'
+      );
+    } finally {
+      conn.release();
+    }
+  }
+
+  // 시설 업그레이드 완료 알림
+  static async createFacilityUpgradeCompleteNotification(teamId, facilityName, newLevel) {
+    const conn = await pool.getConnection();
+    try {
+      const team = await conn.query('SELECT user_id FROM teams WHERE id = ?', [teamId]);
+      if (team.length === 0) return;
+
+      await this.createNotification(
+        team[0].user_id,
+        teamId,
+        'FACILITY_UPGRADE',
+        '시설 업그레이드 완료',
+        `${facilityName}이(가) 레벨 ${newLevel}로 업그레이드되었습니다!`,
+        'LOW'
+      );
+    } finally {
+      conn.release();
+    }
+  }
+
+  // 스폰서 제안 알림
+  static async createSponsorOfferNotification(teamId, sponsorName) {
+    const conn = await pool.getConnection();
+    try {
+      const team = await conn.query('SELECT user_id FROM teams WHERE id = ?', [teamId]);
+      if (team.length === 0) return;
+
+      await this.createNotification(
+        team[0].user_id,
+        teamId,
+        'SPONSOR_OFFER',
+        '스폰서 제안',
+        `${sponsorName}에서 스폰서 계약을 제안했습니다!`,
+        'MEDIUM'
+      );
+    } finally {
+      conn.release();
+    }
+  }
 }
 
 module.exports = NotificationService;
