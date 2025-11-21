@@ -100,7 +100,7 @@ function TeamCreation({ user, onTeamCreated }) {
       onTeamCreated(response.data);
     } catch (error) {
       console.error('팀 생성 오류:', error);
-      alert('팀 생성에 실패했습니다: ' + (error.response?.data?.error || error.message));
+      setError(error.response?.data?.error || error.message || '팀 생성에 실패했습니다.');
     } finally {
       setLoading(false);
     }

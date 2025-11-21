@@ -36,12 +36,12 @@ function TransferMarket({ team }) {
 
   const handleBid = async (playerId) => {
     if (!offerAmount || offerAmount <= 0) {
-      alert('제안 금액을 입력해주세요');
+      window.alert('제안 금액을 입력해주세요');
       return;
     }
 
     if (offerAmount > team.money) {
-      alert('보유 자금이 부족합니다');
+      window.alert('보유 자금이 부족합니다');
       return;
     }
 
@@ -55,17 +55,17 @@ function TransferMarket({ team }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert('이적 제안이 완료되었습니다!');
+      window.alert('이적 제안이 완료되었습니다!');
       setSelectedPlayer(null);
       setOfferAmount(0);
       loadMarketData();
     } catch (error) {
-      alert(error.response?.data?.error || '제안 실패');
+      window.alert(error.response?.data?.error || '제안 실패');
     }
   };
 
   const handleListPlayer = async (playerId) => {
-    const price = prompt('이적료를 입력하세요 (원):');
+    const price = window.prompt('이적료를 입력하세요 (원):');
     if (!price) return;
 
     try {
@@ -78,10 +78,10 @@ function TransferMarket({ team }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert('선수가 이적 시장에 등록되었습니다!');
+      window.alert('선수가 이적 시장에 등록되었습니다!');
       loadMarketData();
     } catch (error) {
-      alert(error.response?.data?.error || '등록 실패');
+      window.alert(error.response?.data?.error || '등록 실패');
     }
   };
 

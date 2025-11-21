@@ -43,10 +43,10 @@ function Facilities({ team }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert(`${getFacilityName(facilityType)} 업그레이드가 시작되었습니다!`);
+      window.alert(`${getFacilityName(facilityType)} 업그레이드가 시작되었습니다!`);
       loadFacilities();
     } catch (error) {
-      alert(error.response?.data?.error || '업그레이드 실패');
+      window.alert(error.response?.data?.error || '업그레이드 실패');
     } finally {
       setUpgrading(null);
     }

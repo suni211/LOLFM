@@ -28,7 +28,7 @@ function Training({ team }) {
 
   const handleTrain = async () => {
     if (!selectedPlayer) {
-      alert('선수를 선택해주세요');
+      window.alert('선수를 선택해주세요');
       return;
     }
 
@@ -42,10 +42,10 @@ function Training({ team }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert('훈련이 시작되었습니다!');
+      window.alert('훈련이 시작되었습니다!');
       loadPlayers();
     } catch (error) {
-      alert(error.response?.data?.error || '훈련 실패');
+      window.alert(error.response?.data?.error || '훈련 실패');
     }
   };
 

@@ -67,7 +67,7 @@ function LogoUpload({ team, onLogoUpdate }) {
         }
         setPreview(null);
         fileInput.value = '';
-        alert('로고가 업로드되었습니다.');
+        setError('');
       }
     } catch (error) {
       console.error('로고 업로드 오류:', error);
@@ -93,7 +93,7 @@ function LogoUpload({ team, onLogoUpdate }) {
           onLogoUpdate(null);
         }
         setPreview(null);
-        alert('로고가 삭제되었습니다.');
+        setError('');
       }
     } catch (error) {
       console.error('로고 삭제 오류:', error);

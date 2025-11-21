@@ -33,7 +33,7 @@ function Sponsors({ team }) {
   };
 
   const handleContract = async (sponsorId) => {
-    if (!confirm('이 스폰서와 계약하시겠습니까?')) return;
+    if (!window.confirm('이 스폰서와 계약하시겠습니까?')) return;
 
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -45,15 +45,15 @@ function Sponsors({ team }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert('스폰서 계약이 완료되었습니다!');
+      window.alert('스폰서 계약이 완료되었습니다!');
       loadSponsors();
     } catch (error) {
-      alert(error.response?.data?.error || '계약 실패');
+      window.alert(error.response?.data?.error || '계약 실패');
     }
   };
 
   const handleTerminate = async () => {
-    if (!confirm('현재 스폰서와의 계약을 해지하시겠습니까?')) return;
+    if (!window.confirm('현재 스폰서와의 계약을 해지하시겠습니까?')) return;
 
     try {
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -65,10 +65,10 @@ function Sponsors({ team }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert('스폰서 계약이 해지되었습니다.');
+      window.alert('스폰서 계약이 해지되었습니다.');
       loadSponsors();
     } catch (error) {
-      alert(error.response?.data?.error || '해지 실패');
+      window.alert(error.response?.data?.error || '해지 실패');
     }
   };
 
