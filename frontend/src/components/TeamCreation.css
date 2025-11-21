@@ -1,0 +1,341 @@
+.team-creation {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.creation-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.creation-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.creation-subtitle {
+  font-size: 1.1rem;
+  color: #b0b0b0;
+}
+
+/* Region Selection */
+.region-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.region-card {
+  background: linear-gradient(135deg, #1a1f23 0%, #0f1215 100%);
+  border: 2px solid rgba(0, 255, 136, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.region-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.region-card:hover {
+  transform: translateY(-8px);
+  border-color: #00ff88;
+  box-shadow: 0 12px 40px rgba(0, 255, 136, 0.3);
+}
+
+.region-card:hover::before {
+  opacity: 1;
+}
+
+.region-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.5));
+}
+
+.region-info {
+  flex: 1;
+}
+
+.region-name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin-bottom: 0.25rem;
+}
+
+.region-code {
+  font-size: 0.9rem;
+  color: #00ff88;
+  font-weight: 600;
+}
+
+.region-arrow {
+  font-size: 2rem;
+  color: #00ff88;
+  transition: transform 0.3s ease;
+}
+
+.region-card:hover .region-arrow {
+  transform: translateX(8px);
+}
+
+/* League Selection */
+.league-selection {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.back-btn {
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(-4px);
+}
+
+.league-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.league-card {
+  background: linear-gradient(135deg, #1a1f23 0%, #0f1215 100%);
+  border: 2px solid rgba(0, 255, 136, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.league-card:hover {
+  transform: translateY(-8px);
+  border-color: #00ff88;
+  box-shadow: 0 12px 40px rgba(0, 255, 136, 0.3);
+}
+
+.league-badge {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6f 100%);
+  border-radius: 20px;
+  margin-bottom: 1rem;
+}
+
+.league-division {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0a0e0f;
+}
+
+.league-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin-bottom: 1rem;
+}
+
+.league-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #b0b0b0;
+}
+
+.league-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-icon {
+  font-size: 1.1rem;
+}
+
+.league-full {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 59, 59, 0.8);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Team Form */
+.team-form {
+  max-width: 600px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #1a1f23 0%, #0f1215 100%);
+  border: 2px solid rgba(0, 255, 136, 0.2);
+  border-radius: 12px;
+  padding: 2.5rem;
+  animation: fadeIn 0.4s ease;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 0.75rem;
+}
+
+.label-icon {
+  font-size: 1.3rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #00ff88;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+}
+
+.input-hint {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+.logo-upload {
+  display: flex;
+  justify-content: center;
+}
+
+.logo-input {
+  display: none;
+}
+
+.logo-label {
+  width: 200px;
+  height: 200px;
+  border: 3px dashed rgba(0, 255, 136, 0.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.logo-label:hover {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.logo-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.3));
+}
+
+.placeholder-text {
+  font-size: 0.95rem;
+  color: #b0b0b0;
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2.5rem;
+}
+
+.form-actions .btn {
+  flex: 1;
+  justify-content: center;
+  padding: 1rem;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 768px) {
+  .team-creation {
+    padding: 1rem;
+  }
+
+  .creation-title {
+    font-size: 2rem;
+  }
+
+  .region-grid,
+  .league-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-form {
+    padding: 1.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}
+

@@ -1,0 +1,142 @@
+.facilities {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, transparent 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 136, 0.1);
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+  color: #b0b0b0;
+  font-size: 1.1rem;
+}
+
+.facilities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.facility-card {
+  background: linear-gradient(135deg, #1a1f23 0%, #0f1215 100%);
+  border: 2px solid rgba(0, 255, 136, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.facility-card:hover {
+  transform: translateY(-8px);
+  border-color: #00ff88;
+  box-shadow: 0 12px 40px rgba(0, 255, 136, 0.3);
+}
+
+.facility-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.facility-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.5));
+}
+
+.facility-info {
+  flex: 1;
+}
+
+.facility-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin-bottom: 0.25rem;
+}
+
+.facility-level {
+  font-size: 0.95rem;
+  color: #00ff88;
+  font-weight: 600;
+}
+
+.facility-stats {
+  margin-bottom: 1.5rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #b0b0b0;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.value {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.expense {
+  color: #ff6b6b;
+}
+
+.upgrade-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6f 100%);
+  color: #0a0e0f;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upgrade-btn:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 255, 136, 0.5);
+}
+
+.upgrade-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #555;
+}
+
+.max-level {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(0, 255, 136, 0.1);
+  border-radius: 8px;
+  color: #00ff88;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .facilities-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
